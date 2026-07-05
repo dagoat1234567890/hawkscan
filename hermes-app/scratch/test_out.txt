@@ -1,0 +1,15 @@
+Testing DDG scraper with '100g silver bar site:noon.com'
+Listings found: 0
+
+Testing DDG scraper with '100g silver bar noon'
+Listings found: 10
+Sign in - Claude - https://www.bing.com/ck/a
+12-Week AI Automation Mastery Course | Claude - https://www.bing.com/ck/a
+Job Search Automation - Interactive Setup Tutorial | Claude - https://www.bing.com/ck/a
+Claude 4 Prompt Generator - https://www.bing.com/ck/a
+Comprehensive Guide to Prompt Engineering Techniques | Claude - https://www.bing.com/ck/a
+AI Video Story Generator | Claude - https://www.bing.com/ck/a
+Claude Code's High-Impact Mental Efficiency Patterns - https://www.bing.com/ck/a
+AI Content Humanizer - Leadership in Change | Claude - https://www.bing.com/ck/a
+Claude Advanced Techniques - Universal Best Practices - https://www.bing.com/ck/a
+Claude Code: 에이전트 코딩을 위한 모범 사례 | Claude - https://www.bing.com/ck/a

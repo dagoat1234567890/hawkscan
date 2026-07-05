@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan History | Hawkscan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .table-container {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        th, td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            background: var(--bg-primary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+        .filter-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12h4l2-9 5 18 3-10h6"></path>
+                </svg>
+                Hawkscan
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('chat_view') }}">Agent</a>
+                <a href="{{ url_for('history') }}" class="active">History</a>
+                <a href="{{ url_for('pricing') }}">Pricing</a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container" style="margin-top: 3rem;">
+        <div class="header-actions">
+            <div>
+                <h1 style="font-family: 'Outfit', sans-serif; font-size: 2.5rem; color: var(--text-primary); margin-bottom: 0.5rem;">Global Scan History</h1>
+                <p class="text-secondary">A complete log of all price scans performed by Hawkscan.</p>
+            </div>
+        </div>
+        
+
+        <div id="loading-state" style="text-align: center; padding: 4rem; color: var(--text-secondary);">
+            <div class="loader" style="margin: 0 auto 1rem; border-color: rgba(0,0,0,0.1); border-top-color: var(--accent-primary);"></div>
+            <p>Loading history...</p>
+        </div>
+
+        <div class="table-container" style="display: none;" id="history-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="window.sortHistory('date')" style="cursor: pointer; border-bottom: none;">Date & Time <span id="sort-date-indicator">↕</span></th>
+                        <th style="border-bottom: none;">Product Name</th>
+                        <th style="border-bottom: none;">Platform</th>
+                        <th onclick="window.sortHistory('price')" style="cursor: pointer; border-bottom: none;">Your Price <span id="sort-price-indicator">↕</span></th>
+                        <th onclick="window.sortHistory('market_avg')" style="cursor: pointer; border-bottom: none;">Market Avg <span id="sort-market-avg-indicator">↕</span></th>
+                        <th onclick="window.sortHistory('market_high')" style="cursor: pointer; border-bottom: none;">Market High <span id="sort-market-high-indicator">↕</span></th>
+                        <th onclick="window.sortHistory('market_low')" style="cursor: pointer; border-bottom: none;">Market Low <span id="sort-market-low-indicator">↕</span></th>
+                    </tr>
+                    <tr class="filter-row">
+                        <th style="padding: 0 1rem 1rem;"><input type="text" id="filter-date" placeholder="Search..." style="width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary);"></th>
+                        <th style="padding: 0 1rem 1rem;"><input type="text" id="filter-name" placeholder="Search name..." style="width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary);"></th>
+                        <th style="padding: 0 1rem 1rem;"><input type="text" id="filter-platform" placeholder="Search..." style="width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary);"></th>
+                        <th style="padding: 0 1rem 1rem;"><input type="text" id="filter-price" placeholder="> 100" style="width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary);"></th>
+                        <th style="padding: 0 1rem 1rem;"><input type="text" id="filter-avg" placeholder="< 500" style="width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary);"></th>
+                        <th style="padding: 0 1rem 1rem;"><input type="text" id="filter-high" placeholder="Search..." style="width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary);"></th>
+                        <th style="padding: 0 1rem 1rem;"><input type="text" id="filter-low" placeholder="Search..." style="width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary);"></th>
+                    </tr>
+                </thead>
+                <tbody id="history-tbody">
+                    <!-- History rows injected here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="empty-state" style="text-align: center; padding: 5rem 2rem; background: var(--bg-surface); border: 1px dashed var(--border-color); border-radius: 12px; margin-top: 2rem; display: none;">
+            <h3 style="color: var(--text-primary); margin-bottom: 0.5rem; font-family: 'Outfit', sans-serif;">No history found</h3>
+            <p style="color: var(--text-secondary); max-width: 400px; margin: 0 auto;">History will appear here after you scan products on your dashboard.</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/history.js') }}"></script>
+</body>
+</html>

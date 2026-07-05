@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login to Hawkscan">
+    <title>Login - Hawkscan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <nav>
+        <a href="/" class="logo">Hawkscan.</a>
+        <div class="nav-links">
+            <a href="/login" class="active">Login</a>
+            <a href="/sign-up">Sign Up</a>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="glass-panel auth-card">
+            <div class="auth-header">
+                <h1>Welcome Back</h1>
+                <p class="text-secondary">Enter your details to access your dashboard.</p>
+            </div>
+            
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-error" style="color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.75rem 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.9rem; text-align: center; font-weight: 500;">
+                        {{ messages[0] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <form action="/login" method="POST">
+                <div class="input-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit">Sign In</button>
+            </form>
+            <div class="auth-link">
+                Don't have an account? <a href="/sign-up">Sign up</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

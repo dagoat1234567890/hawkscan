@@ -1,0 +1,526 @@
+import os
+import sqlite3
+from functools import wraps
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, flash
+from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
+from apscheduler.schedulers.background import BackgroundScheduler
+from hermes import HawkscanAgent
+from scheduler import run_analysis_job
+
+load_dotenv()
+
+DATABASE = "users.db"
+
+def init_db():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            target_competitors TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            title TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (conversation_id) REFERENCES conversations (id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS trackers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            product_name TEXT NOT NULL,
+            company_name TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            baseline_price REAL,
+            last_price REAL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+# Initialize DB on startup
+init_db()
+
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
+
+# Initialize Hawkscan Agent
+agent = HawkscanAgent()
+
+# --- Decorators for Route Protection ---
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def login_required_api(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({"error": "Unauthorized. Please log in."}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --- Routes for HTML Pages ---
+
+@app.route('/')
+def landing():
+    return render_template('landing.html')
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template('products.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+        
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        
+        if not email or not password:
+            flash("Email and Password are required.")
+            return render_template('login.html')
+            
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        if user and check_password_hash(user[1], password):
+            session['user_id'] = user[0]
+            return redirect(url_for('dashboard'))
+        else:
+            flash("Invalid email or password.")
+            return render_template('login.html')
+            
+    return render_template('login.html')
+
+@app.route('/sign-up', methods=['GET', 'POST'])
+def sign_up():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+        
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        
+        if not email or not password:
+            flash("Email and Password are required.")
+            return render_template('sign-up.html')
+            
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        try:
+            # Check if user already exists
+            cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+            if cursor.fetchone():
+                flash("Email address already registered.")
+                return render_template('sign-up.html')
+            
+            hashed_pw = generate_password_hash(password)
+            cursor.execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, hashed_pw))
+            conn.commit()
+            
+            # Fetch new user ID
+            cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+            new_user = cursor.fetchone()
+            session['user_id'] = new_user[0]
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            flash(f"An error occurred: {e}")
+        finally:
+            conn.close()
+            
+    return render_template('sign-up.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    flash("You have been logged out.")
+    return redirect(url_for('login'))
+
+@app.route('/pricing')
+@login_required
+def pricing():
+    return render_template('pricing.html')
+
+@app.route('/empty')
+@login_required
+def empty():
+    return render_template('empty.html')
+
+@app.route('/history')
+@login_required
+def history():
+    return render_template('history.html')
+
+@app.route('/chat')
+@login_required
+def chat_view():
+    return render_template('chat.html')
+
+@app.route('/api/analyze', methods=['POST'])
+@login_required_api
+def api_analyze():
+    data = request.json
+    product_name = data.get('product_name', '')
+    company_name = data.get('company_name', '')
+    platform = data.get('platform', '')
+    
+    user_id = session.get('user_id')
+    
+    if not product_name or not company_name or not platform:
+        return jsonify({"error": "Product Name, Company Name, and Platform are required."}), 400
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, catalog_url FROM trackers WHERE user_id = ? AND product_name = ? AND company_name = ? AND platform = ?", 
+                  (user_id, product_name, company_name, platform))
+    row = cursor.fetchone()
+    tracker_id = row[0] if row else None
+    catalog_url = row[1] if row else None
+    
+    cursor.execute("SELECT target_competitors FROM users WHERE id = ?", (user_id,))
+    comp_row = cursor.fetchone()
+    conn.close()
+    
+    target_competitors = comp_row[0] if comp_row and comp_row[0] else None
+
+    results = agent.analyze_prices(product_name, company_name, platform, catalog_url=catalog_url, target_competitors=target_competitors)
+    results['catalog_url'] = catalog_url
+    
+    if tracker_id and 'stats' in results:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        my_price = results.get('my_price')
+        if my_price == "Not Found":
+            my_price = None
+
+        stats = results['stats']
+        avg = stats.get('avg')
+        high = stats.get('max')
+        low = stats.get('min')
+        
+        # Insert into scan_history
+        cursor.execute('''INSERT INTO scan_history (tracker_id, my_price, market_avg, market_high, market_low) 
+                          VALUES (?, ?, ?, ?, ?)''', (tracker_id, my_price, avg, high, low))
+        
+        if my_price != "Error":
+            # Update trackers table only if not an error
+            cursor.execute('''UPDATE trackers 
+                              SET last_price = ?, last_market_avg = ?, last_market_high = ?, last_market_low = ?, 
+                                  scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
+                              WHERE id = ?''', (my_price, avg, high, low, tracker_id))
+        else:
+            # Just update scan count and timestamp if error
+            cursor.execute('''UPDATE trackers 
+                              SET scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
+                              WHERE id = ?''', (tracker_id,))
+        
+        conn.commit()
+        conn.close()
+        
+    return jsonify(results)
+
+@app.route('/api/settings/competitors', methods=['GET', 'POST'])
+@login_required_api
+def api_settings_competitors():
+    user_id = session.get('user_id')
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    if request.method == 'GET':
+        cursor.execute("SELECT target_competitors FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        conn.close()
+        competitors = row[0] if row and row[0] else ""
+        return jsonify({"competitors": competitors})
+        
+    elif request.method == 'POST':
+        data = request.json
+        competitors = data.get('competitors', '')
+        cursor.execute("UPDATE users SET target_competitors = ? WHERE id = ?", (competitors, user_id))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "competitors": competitors})
+
+@app.route('/api/chat', methods=['POST'])
+@login_required_api
+def api_chat():
+    data = request.json
+    message = data.get('message', '').strip()
+    conversation_id = data.get('conversation_id')
+    
+    if not message:
+        return jsonify({"error": "Message cannot be empty."}), 400
+        
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    if not conversation_id:
+        # Create new conversation
+        title = message[:30] + "..." if len(message) > 30 else message
+        cursor.execute("INSERT INTO conversations (user_id, title) VALUES (?, ?)", (user_id, title))
+        conversation_id = cursor.lastrowid
+    
+    # Fetch history
+    cursor.execute("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY timestamp ASC", (conversation_id,))
+    history_rows = cursor.fetchall()
+    history = [{"role": row[0], "content": row[1]} for row in history_rows]
+    
+    # Get reply from agent passing the history and user_id
+    response_text = agent.chat(message, history, user_id=user_id)
+    
+    # Save new messages
+    cursor.execute("INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)", (conversation_id, "user", message))
+    cursor.execute("INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)", (conversation_id, "assistant", response_text))
+    conn.commit()
+    conn.close()
+    
+    action_taken = None
+    if "change my price" in message.lower() or "update price" in message.lower():
+        action_taken = "Price updated successfully via Hawkscan Execution Skill."
+        
+    return jsonify({
+        "reply": response_text,
+        "action": action_taken,
+        "conversation_id": conversation_id
+    })
+
+@app.route('/api/conversations', methods=['GET'])
+@login_required_api
+def api_conversations():
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title, created_at FROM conversations WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+    convs = cursor.fetchall()
+    conn.close()
+    return jsonify([{"id": c[0], "title": c[1], "created_at": c[2]} for c in convs])
+
+@app.route('/api/conversations/<int:conversation_id>', methods=['GET'])
+@login_required_api
+def api_conversation_messages(conversation_id):
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    # Verify owner
+    cursor.execute("SELECT id FROM conversations WHERE id = ? AND user_id = ?", (conversation_id, user_id))
+    if not cursor.fetchone():
+        conn.close()
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    cursor.execute("SELECT role, content, timestamp FROM messages WHERE conversation_id = ? ORDER BY timestamp ASC", (conversation_id,))
+    messages = cursor.fetchall()
+    conn.close()
+    return jsonify([{"role": m[0], "content": m[1], "timestamp": m[2]} for m in messages])
+
+@app.route('/api/track', methods=['POST'])
+@login_required_api
+def api_track():
+    data = request.json
+    product_name = data.get('product_name', '').strip()
+    company_name = data.get('company_name', '').strip()
+    platform = data.get('platform', '').strip()
+    catalog_url = data.get('catalog_url', '').strip()
+    
+    if not all([product_name, company_name, platform]):
+        return jsonify({"error": "Missing required fields"}), 400
+        
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO trackers (user_id, product_name, company_name, platform, baseline_price, catalog_url) VALUES (?, ?, ?, ?, NULL, ?)",
+        (user_id, product_name, company_name, platform, catalog_url)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route('/api/products/<int:product_id>', methods=['GET'])
+@login_required_api
+def api_product(product_id):
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, product_name, company_name, platform, baseline_price, catalog_url FROM trackers WHERE id = ? AND user_id = ?", (product_id, user_id))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": "Product not found"}), 404
+    return jsonify({
+        "id": row[0],
+        "product_name": row[1],
+        "company_name": row[2],
+        "platform": row[3],
+        "baseline_price": row[4],
+        "catalog_url": row[5]
+    })
+
+@app.route('/api/trackers', methods=['GET'])
+@login_required_api
+def api_trackers():
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, product_name, company_name, platform, baseline_price, last_price, updated_at, is_active, catalog_url, last_market_avg, last_market_high, last_market_low, scan_count FROM trackers WHERE user_id = ?", (user_id,))
+    trackers = cursor.fetchall()
+    conn.close()
+    return jsonify([{
+        "id": t[0], "product_name": t[1], "company_name": t[2], 
+        "platform": t[3], "baseline_price": t[4], "last_price": t[5], "updated_at": t[6], "is_active": bool(t[7]), "catalog_url": t[8],
+        "last_market_avg": t[9], "last_market_high": t[10], "last_market_low": t[11], "scan_count": t[12]
+    } for t in trackers])
+
+@app.route('/api/history/<int:tracker_id>', methods=['GET'])
+@login_required_api
+def api_history_tracker(tracker_id):
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    # Verify owner
+    cursor.execute("SELECT id FROM trackers WHERE id = ? AND user_id = ?", (tracker_id, user_id))
+    if not cursor.fetchone():
+        conn.close()
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    cursor.execute("SELECT my_price, market_avg, market_high, market_low, timestamp FROM scan_history WHERE tracker_id = ? ORDER BY timestamp DESC", (tracker_id,))
+    history_rows = cursor.fetchall()
+    conn.close()
+    
+    return jsonify([{
+        "my_price": h[0], "market_avg": h[1], "market_high": h[2], "market_low": h[3], "timestamp": h[4]
+    } for h in history_rows])
+
+@app.route('/api/history_global', methods=['GET'])
+@login_required_api
+def api_history_global():
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT t.product_name, t.platform, s.my_price, s.market_avg, s.market_high, s.market_low, s.timestamp 
+        FROM scan_history s
+        JOIN trackers t ON s.tracker_id = t.id
+        WHERE t.user_id = ?
+        ORDER BY s.timestamp DESC
+    ''', (user_id,))
+    
+    history_rows = cursor.fetchall()
+    conn.close()
+    
+    return jsonify([{
+        "product_name": h[0], "platform": h[1], "my_price": h[2], 
+        "market_avg": h[3], "market_high": h[4], "market_low": h[5], "timestamp": h[6]
+    } for h in history_rows])
+
+@app.route('/api/trackers/<int:product_id>/toggle', methods=['POST'])
+@login_required_api
+def api_toggle_tracker(product_id):
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_active FROM trackers WHERE id = ? AND user_id = ?", (product_id, user_id))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"error": "Tracker not found"}), 404
+        
+    new_status = 1 if row[0] == 0 else 0
+    cursor.execute("UPDATE trackers SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (new_status, product_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"success": True, "is_active": bool(new_status)})
+
+@app.route('/api/trackers/<int:product_id>', methods=['DELETE'])
+@login_required_api
+def api_delete_tracker(product_id):
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM trackers WHERE id = ? AND user_id = ?", (product_id, user_id))
+    rows_affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    
+    if rows_affected == 0:
+        return jsonify({"error": "Tracker not found"}), 404
+        
+    return jsonify({"success": True})
+
+@app.route('/api/test-email', methods=['POST'])
+@login_required_api
+def api_test_email():
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT email FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        return jsonify({"error": "User not found"}), 404
+        
+    user_email = row[0]
+    
+    try:
+        from emailer import send_price_drop_email
+        send_price_drop_email(
+            to_email=user_email,
+            product_name="Test Product (iPhone 15 Pro)",
+            my_price=4500.00,
+            competitor_price=4200.00,
+            platform="Amazon.ae",
+            url="https://amazon.ae",
+            competitor_name="Test Competitor"
+        )
+        return jsonify({"success": True, "message": f"Test email sent to {user_email}!"})
+    except Exception as e:
+        return jsonify({"error": f"Failed to send email: {str(e)}"}), 500
+
+if __name__ == '__main__':
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(func=run_analysis_job, trigger="interval", hours=1)
+    scheduler.start()
+    
+    try:
+        app.run(debug=True, port=5000, use_reloader=False)
+    finally:
+        scheduler.shutdown()

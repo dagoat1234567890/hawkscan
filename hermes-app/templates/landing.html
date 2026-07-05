@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hawkscan | AI Competitive Intelligence for E-Commerce</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .hero-section {
+            min-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .hero-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 4.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            max-width: 900px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(91, 83, 237, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(91, 83, 237, 0.6);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            background: white;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 5rem 10%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .feature-desc {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-left: 2rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-primary);
+        }
+        
+        .nav-links .btn-login {
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Blobs -->
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <!-- Minimal Navbar -->
+    <nav>
+        <div class="logo">
+            <span style="color: var(--accent-primary)">Hawk</span>scan
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('login') }}" class="btn-login">Login</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main>
+        <section class="hero-section">
+            <h1 class="hero-title">Dominate Your Market with AI Intelligence.</h1>
+            <p class="hero-subtitle">
+                Hawkscan is the ultimate competitive price-tracking engine for e-commerce sellers on Noon and Amazon. Outsmart your competitors with real-time 24/7 AI-driven analysis.
+            </p>
+            <div class="cta-buttons">
+                <a href="{{ url_for('sign_up') }}" class="btn btn-primary">Start Scanning Free</a>
+                <a href="#features" class="btn btn-secondary">Learn More</a>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features-grid">
+            <div class="glass-panel feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">Real-Time Scraping</h3>
+                <p class="feature-desc">Bypass anti-bot protections and fetch live, 100% accurate competitor pricing directly from Amazon and Noon internal APIs.</p>
+            </div>
+            
+            <div class="glass-panel feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3 class="feature-title">Powered by Claude 3</h3>
+                <p class="feature-desc">Our integrated AI agent intelligently reads unstructured market data to find exact product matches and calculate market averages.</p>
+            </div>
+            
+            <div class="glass-panel feature-card">
+                <div class="feature-icon">💬</div>
+                <h3 class="feature-title">Interactive AI Agent</h3>
+                <p class="feature-desc">Chat directly with your dashboard. Ask complex questions like "Who is the cheapest seller of 50g gold bars?" and get instant answers.</p>
+            </div>
+
+            <div class="glass-panel feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3 class="feature-title">Target Competitors</h3>
+                <p class="feature-desc">Filter the noise. Tell Hawkscan exactly which stores you consider direct competitors and it will ignore the rest.</p>
+            </div>
+            
+            <div class="glass-panel feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3 class="feature-title">24/7 Automation</h3>
+                <p class="feature-desc">Set it and forget it. Hawkscan runs hourly background checks and logs historical price drops so you never miss a market shift.</p>
+            </div>
+
+            <div class="glass-panel feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">Beautiful Dashboard</h3>
+                <p class="feature-desc">A gorgeous, glassmorphism UI that gives you instant insights, Odoo-style filtering, and a comprehensive scan history.</p>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>

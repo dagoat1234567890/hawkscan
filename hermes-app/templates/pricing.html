@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pricing - Hawkscan">
+    <title>Pricing - Hawkscan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .pricing-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+            flex-wrap: wrap;
+        }
+
+        .pricing-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--accent-primary, #2a3fd6);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        .pro-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-primary, #2a3fd6);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary, #111);
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-desc {
+            color: var(--text-secondary, #666);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            min-height: 40px;
+        }
+
+        .plan-price {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--text-primary, #111);
+            margin-bottom: 2rem;
+        }
+
+        .plan-price span {
+            font-size: 1rem;
+            color: var(--text-secondary, #666);
+            font-weight: 500;
+        }
+
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 2rem 0;
+            text-align: left;
+        }
+
+        .features-list li {
+            padding: 0.75rem 0;
+            color: var(--text-secondary, #666);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .features-list li::before {
+            content: '✓';
+            color: var(--accent-primary, #2a3fd6);
+            font-weight: 800;
+        }
+
+        .btn-checkout {
+            background: var(--bg-secondary, #f4f4f5);
+            color: var(--text-primary, #111);
+            border: 1px solid rgba(0,0,0,0.1);
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-checkout:hover {
+            background: rgba(0,0,0,0.05);
+        }
+
+        .pro .btn-checkout {
+            background: var(--accent-primary, #2a3fd6);
+            color: white;
+            border: none;
+        }
+
+        .pro .btn-checkout:hover {
+            background: #1e30b5; 
+        }
+
+        .enter-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgb(248, 3, 3);
+            color: rgb(255, 255, 255);
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <nav>
+        <a href="/" class="logo">Hawkscan.</a>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/pricing" class="active">Pricing</a>
+            <a href="/chat">Chat</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div style="text-align: center; margin-top: 4rem; padding: 0 2rem;">
+        <h1 style="font-size: 3rem; margin-bottom: 1rem; color: var(--text-primary, #111);">Simple, transparent pricing</h1>
+        <p style="font-size: 1.1rem; color: var(--text-secondary, #666);">Scale your competitive intelligence with Hawkscan.</p>
+    </div>
+
+    <div class="pricing-container">
+        <div class="pricing-panel">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div class="pro-badge" style="position: relative; display: inline-block; top: 0; left: 0; transform: none; margin-bottom: 1rem;">Flexible Pricing</div>
+                <h2 class="plan-name" style="font-size: 2.5rem;">Pay As You Go</h2>
+                <p class="plan-desc" style="max-width: 500px; margin: 0 auto 2rem auto;">Advanced competitive insights powered by Anthropic API. Only pay for what you use at a few <strong>cents</strong>.</p>
+            </div>
+            
+            <div class="calculator-section" style="background: rgba(0,0,0,0.03); padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
+                <label for="scan-count" style="display: block; font-weight: 600; margin-bottom: 1rem; font-size: 1.1rem; color: var(--text-primary);">How many scans do you need?</label>
+                <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem;">
+                    <input type="range" id="scan-slider" min="10" max="1000" step="10" value="100" style="flex: 1; cursor: pointer;">
+                    <input type="number" id="scan-input" min="10" max="10000" value="100" style="width: 120px; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 1.5rem; margin-top: 1.5rem;">
+                    <span style="font-size: 1.2rem; font-weight: 600; color: var(--text-secondary);">Total Amount:</span>
+                    <span id="total-price" style="font-size: 3rem; font-weight: 800; color: var(--accent-primary);">$5.00</span>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1rem; color: var(--text-primary);">What's Included:</h3>
+            <ul class="features-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <li>No monthly commitments</li>
+                <li>Hawkscan Agent Web Extraction</li>
+                <li>Chat Mode Access</li>
+                <li>Priority Support</li>
+            </ul>
+            
+            <button class="btn-checkout" style="margin-top: 2rem; font-size: 1.2rem; padding: 1.2rem; background: var(--accent-primary); color: white; border: none;" onclick="window.location.href='/sign-up'">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <script>
+        const pricePerScan = 0.4;
+        const scanSlider = document.getElementById('scan-slider');
+        const scanInput = document.getElementById('scan-input');
+        const totalPrice = document.getElementById('total-price');
+
+        function updatePrice(value) {
+            let numScans = parseInt(value) || 0;
+            if(numScans < 0) numScans = 0;
+            const total = (numScans * pricePerScan).toFixed(2);
+            totalPrice.textContent = '$' + total;
+            
+            scanSlider.value = numScans <= 1000 ? numScans : 1000;
+            scanInput.value = numScans;
+        }
+
+        scanSlider.addEventListener('input', (e) => updatePrice(e.target.value));
+        scanInput.addEventListener('input', (e) => updatePrice(e.target.value));
+    </script>
+</body>
+</html>
