@@ -292,13 +292,7 @@ class HawkscanAgent:
             print("curl_cffi not installed, falling back to standard requests (may fail against Cloudflare).")
             import requests as curl_requests
             
-        # Strip overly specific brand names to broaden the search reach
         search_query = product_name
-        brands_to_strip = ["Emirates Gold ", "Emirates ", "PAMP Suisse ", "PAMP ", "Valcambi ", "BTC "]
-        for brand in brands_to_strip:
-            if search_query.lower().startswith(brand.lower()):
-                search_query = search_query[len(brand):].strip()
-                break # Only strip the first matched prefix
                 
         url = f"https://www.noon.com/_svc/catalog/api/v3/u/search?q={urllib.parse.quote_plus(search_query)}&limit=100"
         results = []
@@ -350,7 +344,7 @@ class HawkscanAgent:
             try:
                 print("Calling Anthropic...")
                 response = self.anthropic_client.messages.create(
-                    model="claude-3-haiku-20240307",
+                    model="claude-4-5-haiku-20251001",
                     max_tokens=max_tokens,
                     temperature=temperature,
                     messages=messages
@@ -653,12 +647,12 @@ class HawkscanAgent:
         
         prompt += f"""
         Task:
-        1. {f"Extract our exact price ('my_price') from the official product URL provided above ({catalog_url}). IF YOU CANNOT FIND IT, fall back to identifying the listing sold by our company (which may appear as a variation of '{company_name}', or even just '{company_name.split()[0]}'), and extract its price." if catalog_url else f"Identify the listing sold by our company (which may appear as a variation of '{company_name}', or even just '{company_name.split()[0]}'). If there are multiple, pick the one that closest matches the requested decorative edition."} 
-        2. CRITICAL FOR MY_PRICE: Verify that the 'Title' of the product matches the requested product size/unit: '{product_name}'. However, be extremely lenient with decorative names: if our company sells a 'Mecca', 'Kaaba', or 'Eid' bar, and the requested product is 'Islamic Bar', ACCEPT IT as 'my_price'. If our exact product is completely missing, set "my_price" to null.
+        1. {f"Extract our exact price ('my_price') from the official product URL provided above ({catalog_url}). IF YOU CANNOT FIND IT, fall back to identifying the listing sold by our company (which may appear as a variation of '{company_name}', or even just '{company_name.split()[0]}'), and extract its price." if catalog_url else f"Identify the listing sold by our company (which may appear as a variation of '{company_name}', or even just '{company_name.split()[0]}'). If there are multiple, pick the one that closest matches the requested product."} 
+        2. CRITICAL FOR MY_PRICE: Verify that the 'Title' of the product matches the requested product specs: '{product_name}'. However, be extremely lenient with purely cosmetic variations: if our company sells a blue version or special packaging, and the requested product is generic, ACCEPT IT as 'my_price'. If our exact product is completely missing, set "my_price" to null.
         3. Identify real competitor listings ONLY from '{platform_domain}'. Ignore listings from other websites. CRITICAL: Do NOT extract any listings as competitors if the seller contains the word '{company_name.split()[0]}'! They are our own products!
-        4. CRITICAL UNIT/BRAND/EDITION CHECK: Verify that the competitor product unit/size/metal matches '{product_name}'. Ensure all extracted prices are in AED.
-           - BRAND STRICTNESS: If '{product_name}' explicitly includes a brand name (e.g., 'Emirates Gold', 'Emirates', 'BTC', 'PAMP'), you MUST ONLY extract competitors from that exact same brand family (e.g., 'Emirates' and 'Emirates Gold' are the same brand). Reject all other brands (e.g., if requested 'Emirates Gold', reject 'BTC' and 'PAMP').
-           - EDITION LENIENCY: Be highly lenient with specific decorative editions. Treat all religious/decorative editions (e.g., 'Eid Mubarak', 'Kaaba', 'Mecca Madina', 'Al-Haram') of the same metal, weight, and brand as direct competitors. Do NOT exclude competitors just because they have a different edition name, as long as the brand matches!
+        4. CRITICAL SPECIFICATION CHECK: Verify that the competitor product core specifications match '{product_name}'. Ensure all extracted prices are in AED.
+           - BRAND STRICTNESS: If '{product_name}' explicitly includes a brand name (e.g., 'Apple', 'Samsung', 'L\\'Oreal'), you MUST ONLY extract competitors from that exact same brand family. Reject all other brands.
+           - VARIANT LENIENCY: Be highly lenient with cosmetic variations like color, box art, or generic editions. Do NOT exclude competitors just because they have a different color or cosmetic variant, as long as the core model, hardware, capacity, volume, and brand strictly match!
 """
         if target_competitors:
             prompt += f"""        5. CRITICAL COMPETITOR FILTER: ONLY extract competitor listings if the Store/Seller name matches or contains one of the following: {target_competitors}. Completely ignore any sellers not in this list. Do NOT extract them under any circumstances.
@@ -790,7 +784,7 @@ class HawkscanAgent:
                     "properties": {
                         "product_name": {
                             "type": "string",
-                            "description": "The name of the product to search for, e.g. '100g silver bar'."
+                            "description": "The name of the product to search for, e.g. 'Apple iPhone 15 Pro 256GB' or 'L\\'Oreal Shampoo 400ml'."
                         },
                         "platform": {
                             "type": "string",
@@ -859,7 +853,7 @@ class HawkscanAgent:
             # Max 3 tool execution turns to prevent infinite loops
             for _ in range(3):
                 response = self.anthropic_client.messages.create(
-                    model="claude-3-haiku-20240307",
+                    model="claude-4-5-haiku-20251001",
                     system=system_prompt,
                     max_tokens=2000,
                     temperature=0.1,
@@ -906,7 +900,7 @@ class HawkscanAgent:
                             platform = block.input.get("platform")
                             try:
                                 import sqlite3
-                                conn = sqlite3.connect('C:/Users/Shagy/Documents/hermes-app/users.db')
+                                conn = sqlite3.connect('users.db')
                                 c = conn.cursor()
                                 c.execute("INSERT INTO trackers (user_id, product_name, company_name, platform) VALUES (?, ?, ?, ?)", (user_id, product_name, company_name, platform))
                                 conn.commit()
@@ -919,7 +913,7 @@ class HawkscanAgent:
                             product_name = block.input.get("product_name")
                             try:
                                 import sqlite3
-                                conn = sqlite3.connect('C:/Users/Shagy/Documents/hermes-app/users.db')
+                                conn = sqlite3.connect('users.db')
                                 c = conn.cursor()
                                 c.execute("DELETE FROM trackers WHERE user_id = ? AND product_name = ?", (user_id, product_name))
                                 conn.commit()
@@ -932,7 +926,7 @@ class HawkscanAgent:
                             competitors_string = block.input.get("competitors_string")
                             try:
                                 import sqlite3
-                                conn = sqlite3.connect('C:/Users/Shagy/Documents/hermes-app/users.db')
+                                conn = sqlite3.connect('users.db')
                                 c = conn.cursor()
                                 c.execute("UPDATE users SET target_competitors = ? WHERE id = ?", (competitors_string, user_id))
                                 conn.commit()
@@ -944,7 +938,7 @@ class HawkscanAgent:
                         elif block.name == "get_dashboard_data" and user_id:
                             try:
                                 import sqlite3
-                                conn = sqlite3.connect('C:/Users/Shagy/Documents/hermes-app/users.db')
+                                conn = sqlite3.connect('users.db')
                                 c = conn.cursor()
                                 c.execute("SELECT product_name, company_name, platform, last_price, last_market_avg FROM trackers WHERE user_id = ?", (user_id,))
                                 rows = c.fetchall()
