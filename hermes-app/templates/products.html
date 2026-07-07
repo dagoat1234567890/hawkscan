@@ -222,6 +222,7 @@
                 <a href="{{ url_for('dashboard') }}" class="active">Products</a>
                 <a href="{{ url_for('history') }}">Global History</a>
                 <a href="{{ url_for('chat_view') }}">Agent AI</a>
+                <a href="/settings">Settings</a>
                 <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
             </div>
         </div>
@@ -242,13 +243,7 @@
                     </svg>
                     Scan All Products
                 </button>
-                <button class="add-btn" id="test-email-btn" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-primary);">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                        <polyline points="22,6 12,13 2,6"></polyline>
-                    </svg>
-                    Test Email
-                </button>
+
                 <button class="add-btn" id="open-modal-btn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -259,16 +254,7 @@
             </div>
         </div>
 
-        <div class="glass-panel" style="margin-top: 2rem; padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
-            <div style="flex: 1;">
-                <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">Global Target Competitors</h3>
-                <p class="text-secondary" style="font-size: 0.9rem; margin: 0;">Specify competitor names separated by commas (e.g. "R A K GOLD, Khairallah Gold"). If set, Hawkscan will exclusively compare your prices against these sellers across all products.</p>
-            </div>
-            <div style="display: flex; gap: 1rem; align-items: center; flex: 1;">
-                <input type="text" id="global-competitors-input" placeholder="Leave blank to scan all competitors..." style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
-                <button id="save-competitors-btn" class="add-btn" style="white-space: nowrap;">Save Settings</button>
-            </div>
-        </div>
+
 
         <div id="loading-state" style="text-align: center; padding: 4rem; color: var(--text-secondary);">
             <div class="loader" style="margin: 0 auto 1rem; border-color: rgba(0,0,0,0.1); border-top-color: var(--accent-primary);"></div>
@@ -289,11 +275,11 @@
             <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 1200px;">
                 <thead>
                     <tr>
-                        <th onclick="window.sortProducts('name')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Product Name <span id="sort-name-indicator">↕</span></th>
-                        <th onclick="window.sortProducts('price')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Your Price <span id="sort-price-indicator">↕</span></th>
-                        <th onclick="window.sortProducts('market_avg')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Market Avg <span id="sort-market-avg-indicator">↕</span></th>
-                        <th onclick="window.sortProducts('market_high')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Market Highest <span id="sort-market-high-indicator">↕</span></th>
-                        <th onclick="window.sortProducts('market_low')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Market Lowest <span id="sort-market-low-indicator">↕</span></th>
+                        <th onclick="window.sortProducts('name')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Product Name <span id="sort-name-indicator">Ã¢â€ â€¢</span></th>
+                        <th onclick="window.sortProducts('price')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Your Price <span id="sort-price-indicator">Ã¢â€ â€¢</span></th>
+                        <th onclick="window.sortProducts('market_avg')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Market Avg <span id="sort-market-avg-indicator">Ã¢â€ â€¢</span></th>
+                        <th onclick="window.sortProducts('market_high')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Market Highest <span id="sort-market-high-indicator">Ã¢â€ â€¢</span></th>
+                        <th onclick="window.sortProducts('market_low')" style="cursor: pointer; padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Market Lowest <span id="sort-market-low-indicator">Ã¢â€ â€¢</span></th>
                         <th style="padding: 2rem 2.5rem 0.5rem; background: var(--bg-primary); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; border-bottom: none;">Action</th>
                     </tr>
                     <tr class="filter-row">
@@ -338,8 +324,8 @@
                     <label>Your Company Name</label>
                     <input type="text" id="modal-company-name" placeholder="e.g., Electronics LLC" required>
                 </div>
-                <!-- Hardcoded Platform: Noon -->
-                <input type="hidden" id="modal-platform" value="noon">
+                <!-- Hardcoded Platform: Amazon.ae -->
+                <input type="hidden" id="modal-platform" value="Amazon.ae">
                 <div class="form-group">
                     <label>Official Catalog Link (Optional)</label>
                     <input type="url" id="modal-catalog-url" placeholder="https://amazon.ae/your-product">

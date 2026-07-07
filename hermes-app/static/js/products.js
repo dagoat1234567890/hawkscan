@@ -3,47 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const emptyState = document.getElementById('empty-state');
     const loadingState = document.getElementById('loading-state');
     
-    // Global Settings Logic
-    const globalCompetitorsInput = document.getElementById('global-competitors-input');
-    const saveCompetitorsBtn = document.getElementById('save-competitors-btn');
-    
-    // Load Global Settings
-    async function loadSettings() {
-        try {
-            const response = await fetch('/api/settings/competitors');
-            if (response.ok) {
-                const data = await response.json();
-                globalCompetitorsInput.value = data.competitors || '';
-            }
-        } catch (error) {
-            console.error('Failed to load settings:', error);
-        }
-    }
-    loadSettings();
-    
-    // Save Global Settings
-    saveCompetitorsBtn.addEventListener('click', async () => {
-        saveCompetitorsBtn.innerText = 'Saving...';
-        saveCompetitorsBtn.disabled = true;
-        try {
-            const response = await fetch('/api/settings/competitors', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ competitors: globalCompetitorsInput.value })
-            });
-            if (response.ok) {
-                saveCompetitorsBtn.innerText = 'Saved!';
-                setTimeout(() => {
-                    saveCompetitorsBtn.innerText = 'Save Settings';
-                    saveCompetitorsBtn.disabled = false;
-                }, 2000);
-            }
-        } catch (error) {
-            console.error('Failed to save settings:', error);
-            saveCompetitorsBtn.innerText = 'Error';
-            saveCompetitorsBtn.disabled = false;
-        }
-    });
+    // Product Logic Below
     
     const addModal = document.getElementById('add-modal');
     const openModalBtn = document.getElementById('open-modal-btn');
@@ -74,29 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const testEmailBtn = document.getElementById('test-email-btn');
-    if (testEmailBtn) {
-        testEmailBtn.addEventListener('click', async () => {
-            const originalText = testEmailBtn.innerHTML;
-            testEmailBtn.innerHTML = 'Sending...';
-            testEmailBtn.disabled = true;
-            try {
-                const res = await fetch('/api/test-email', { method: 'POST' });
-                const data = await res.json();
-                if (res.ok) {
-                    alert(data.message || 'Test email sent successfully!');
-                } else {
-                    alert('Error: ' + (data.error || 'Failed to send email'));
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Connection error when sending email.');
-            } finally {
-                testEmailBtn.innerHTML = originalText;
-                testEmailBtn.disabled = false;
-            }
-        });
-    }
 
     // Form Submit
     addProductForm.addEventListener('submit', async (e) => {

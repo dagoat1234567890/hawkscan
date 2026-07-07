@@ -96,3 +96,61 @@ def send_price_drop_email(to_email, product_name, my_price, competitor_price, pl
         print(f"HTML Email notification sent to {to_email} for {product_name}")
     except Exception as e:
         print(f"Failed to send HTML email: {e}")
+
+def send_password_reset_email(to_email, reset_link):
+    smtp_email = os.environ.get("SMTP_EMAIL")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+    
+    if not smtp_email or not smtp_password:
+        print("SMTP_EMAIL or SMTP_PASSWORD not configured. Cannot send password reset email.")
+        return False
+
+    subject = "Reset Your Hawkscan Password"
+    
+    html_content = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px; color: #1f2937; }}
+            .container {{ max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 30px; text-align: center; }}
+            h2 {{ color: #1f2937; }}
+            p {{ font-size: 16px; line-height: 1.5; color: #4b5563; }}
+            .btn {{ display: inline-block; background: #4f46e5; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; margin-top: 20px; }}
+            .footer {{ margin-top: 30px; color: #9ca3af; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Password Reset Request</h2>
+            <p>We received a request to reset the password for your Hawkscan account associated with this email address.</p>
+            <p>Click the button below to choose a new password. This link will expire in 1 hour.</p>
+            <a href="{reset_link}" class="btn">Reset Password</a>
+            <div class="footer">
+                If you didn't request this, you can safely ignore this email.
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    msg = MIMEMultipart('alternative')
+    msg['From'] = f"Hawkscan Security <{smtp_email}>"
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    
+    plain_text = f"Reset your password by visiting this link: {reset_link}"
+    msg.attach(MIMEText(plain_text, 'plain'))
+    msg.attach(MIMEText(html_content, 'html'))
+    
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(smtp_email, smtp_password)
+        server.send_message(msg)
+        server.quit()
+        print(f"Password reset email sent to {to_email}")
+        return True
+    except Exception as e:
+        print(f"Failed to send password reset email: {e}")
+        return False
+

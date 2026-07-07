@@ -9,9 +9,21 @@
   --accent-secondary: #f0388b;  /* Deepened secondary accent */
   --glass-bg: rgba(255, 255, 255, 0.7); /* Translucent glass for light themes */
   --glass-border: rgba(0, 0, 0, 0.05);
-  --glass-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
+  --glass-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
   --toggle-on: #65dab3;         /* Stays mostly the same */
   --toggle-off: #aebcce;        /* Lighter off-state */
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-surface: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
 }
 
 
@@ -73,12 +85,13 @@ body {
 
 .glass-panel {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
-    border-radius: 24px;
+    border-radius: 20px;
     box-shadow: var(--glass-shadow);
     padding: 2.5rem;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 nav {
@@ -145,20 +158,20 @@ nav {
 input, textarea, select {
     width: 100%;
     padding: 1rem 1.2rem;
-    background: rgba(83, 114, 186, 0.6);
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     color: var(--text-primary);
     font-size: 1rem;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     appearance: none;
 }
 
 input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgb(137, 138, 130);
-    background: rgb(255, 255, 255);
+    box-shadow: 0 0 0 3px rgba(91, 83, 237, 0.2);
+    background: var(--bg-surface);
 }
 
 select {
@@ -199,7 +212,7 @@ button::after {
 
 button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 24px -10px var(--accent-primary);
+    box-shadow: 0 6px 20px -5px rgba(91, 83, 237, 0.4);
 }
 
 button:hover::after {

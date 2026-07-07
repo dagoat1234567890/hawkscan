@@ -33,6 +33,15 @@ def init_db():
         )
     """)
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             conversation_id INTEGER NOT NULL,
@@ -96,7 +105,81 @@ def landing():
 @login_required
 def dashboard():
     return render_template('products.html')
+import secrets
+from datetime import datetime, timedelta
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        if not email:
+            flash("Please enter your email.")
+            return render_template('forgot_password.html')
+            
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        
+        if user:
+            user_id = user[0]
+            token = secrets.token_urlsafe(32)
+            cursor.execute("INSERT INTO password_resets (user_id, token) VALUES (?, ?)", (user_id, token))
+            conn.commit()
+            
+            reset_link = url_for('reset_password', token=token, _external=True)
+            
+            try:
+                from emailer import send_password_reset_email
+                success = send_password_reset_email(email, reset_link)
+                if not success:
+                    flash("Email not configured. Here is your reset link (DEV MODE): " + reset_link)
+            except Exception as e:
+                flash("Error sending email: " + str(e))
+                
+        conn.close()
+        flash("If that email exists, a reset link has been sent.")
+        return redirect(url_for('login'))
+        
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    # Clean up old tokens (> 1 hour)
+    cursor.execute("DELETE FROM password_resets WHERE created_at < datetime('now', '-1 hour')")
+    conn.commit()
+    
+    cursor.execute("SELECT user_id FROM password_resets WHERE token = ?", (token,))
+    reset_record = cursor.fetchone()
+    
+    if not reset_record:
+        conn.close()
+        flash("Invalid or expired reset token.")
+        return redirect(url_for('forgot_password'))
+        
+    if request.method == 'POST':
+        new_password = request.form.get('password')
+        if not new_password or len(new_password) < 6:
+            flash("Password must be at least 6 characters.")
+            conn.close()
+            return render_template('reset_password.html', token=token)
+            
+        hashed_pw = generate_password_hash(new_password)
+        user_id = reset_record[0]
+        
+        cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_pw, user_id))
+        cursor.execute("DELETE FROM password_resets WHERE token = ?", (token,))
+        conn.commit()
+        conn.close()
+        
+        flash("Your password has been reset! Please login.")
+        return redirect(url_for('login'))
+        
+    conn.close()
+    return render_template('reset_password.html', token=token)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -179,6 +262,43 @@ def pricing():
 @login_required
 def empty():
     return render_template('empty.html')
+
+@app.route('/settings')
+@login_required
+def settings():
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT email, target_competitors FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if not user:
+        return redirect(url_for('logout'))
+        
+    user_email = user[0]
+    current_competitors = user[1] or ''
+    return render_template('settings.html', user_email=user_email, current_competitors=current_competitors)
+
+@app.route('/api/settings/password', methods=['POST'])
+@login_required
+def api_settings_password():
+    new_password = request.form.get('new_password')
+    if not new_password or len(new_password) < 6:
+        flash("Password must be at least 6 characters.")
+        return redirect(url_for('settings'))
+        
+    user_id = session['user_id']
+    hashed_pw = generate_password_hash(new_password)
+    
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_pw, user_id))
+    conn.commit()
+    conn.close()
+    
+    flash("Password updated successfully!")
+    return redirect(url_for('settings'))
 
 @app.route('/history')
 @login_required

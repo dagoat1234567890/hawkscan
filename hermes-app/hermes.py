@@ -41,6 +41,13 @@ class HawkscanAgent:
     def _request_with_retry(self, url, max_retries=3, method="GET", data=None, timeout_sec=10):
         import time
         import random
+        
+        try:
+            from curl_cffi import requests as curl_requests
+            use_curl = True
+        except ImportError:
+            use_curl = False
+            
         user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2.1 Safari/605.1.15",
@@ -62,10 +69,17 @@ class HawkscanAgent:
         for attempt in range(max_retries):
             headers["User-Agent"] = random.choice(user_agents)
             try:
-                if method == "POST":
-                    response = requests.post(url, headers=headers, data=data, timeout=timeout_sec)
+                if use_curl:
+                    if method == "POST":
+                        response = curl_requests.post(url, headers=headers, data=data, timeout=timeout_sec, impersonate="chrome120")
+                    else:
+                        response = curl_requests.get(url, headers=headers, timeout=timeout_sec, impersonate="chrome120")
                 else:
-                    response = requests.get(url, headers=headers, timeout=timeout_sec)
+                    if method == "POST":
+                        response = requests.post(url, headers=headers, data=data, timeout=timeout_sec)
+                    else:
+                        response = requests.get(url, headers=headers, timeout=timeout_sec)
+                        
                 if response.status_code == 200:
                     return response
                 elif response.status_code in [403, 429, 503]:
@@ -773,6 +787,7 @@ class HawkscanAgent:
         You have execution tools that can automatically add products, delete products, and update target competitors directly in the user's database.
         When asked to modify products or competitors, USE YOUR TOOLS to execute the action immediately, then confirm it was done.
         If the user asks for real-time prices, product searches, or competitive data, ALWAYS use the `search_market` tool to fetch live data from the web before answering.
+        CRITICAL: When providing product listings, search results, or prices to the user, you MUST ALWAYS include clickable markdown links to the actual products (e.g., [Product Name](url)). Never return an unclickable URL.
         """
         
         tools = [

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Settings - Hawkscan">
+    <title>Settings - Hawkscan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            max-width: 800px;
+            margin: 2rem auto;
+        }
+        .settings-section {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .settings-header h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        .settings-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        /* Toggle Switch for Theme */
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+        }
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--toggle-off);
+            transition: .4s;
+            border-radius: 28px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--accent-primary);
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <nav>
+        <a href="/" class="logo">Hawkscan.</a>
+        <div class="nav-links" style="display: flex; align-items: center;">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/chat">Chat</a>
+            <a href="/history">History</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/settings" class="active">Settings</a>
+            <a href="/settings">Settings</a>
+                <a href="/logout" class="logout-btn" style="margin-left: 2rem;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="main-content" style="padding: 2rem 5%;">
+        <div style="max-width: 800px; margin: 0 auto; margin-bottom: 2rem;">
+            <h1 style="font-family: 'Outfit', sans-serif; font-size: 2.5rem; color: var(--text-primary); margin-bottom: 0.5rem;">Settings</h1>
+            <p style="color: var(--text-secondary); font-size: 1.1rem;">Manage your account, preferences, and tracking rules.</p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div style="max-width: 800px; margin: 0 auto 2rem auto; background: rgba(91, 83, 237, 0.1); border: 1px solid rgba(91, 83, 237, 0.2); color: var(--accent-primary); padding: 1rem; border-radius: 12px; font-weight: 500; text-align: center;">
+                    {{ messages[0] }}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="settings-grid">
+            
+            <!-- Theme Settings -->
+            <div class="glass-panel settings-section">
+                <div class="settings-header">
+                    <h3>Appearance</h3>
+                    <p>Customize how Hawkscan looks on this device.</p>
+                </div>
+                <div class="theme-switch-wrapper">
+                    <div style="font-weight: 500; color: var(--text-primary);">Dark Mode</div>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Profile & Security -->
+            <div class="glass-panel settings-section">
+                <div class="settings-header">
+                    <h3>Account Security</h3>
+                    <p>Update your password. You are currently logged in as <strong style="color: var(--text-primary);">{{ user_email }}</strong>.</p>
+                </div>
+                <form action="/api/settings/password" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="new_password">New Password</label>
+                        <input type="password" id="new_password" name="new_password" placeholder="Enter new password (min 6 chars)" required minlength="6">
+                    </div>
+                    <button type="submit" style="width: auto; align-self: flex-start; padding: 0.75rem 1.5rem;">Update Password</button>
+                </form>
+            </div>
+
+            <!-- Email Notifications -->
+            <div class="glass-panel settings-section">
+                <div class="settings-header">
+                    <h3>Email Notifications</h3>
+                    <p>Hawkscan will automatically send you alerts when a competitor drops their price below yours. Use the button below to send a test alert to your email.</p>
+                </div>
+                <button class="add-btn" id="test-email-btn" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-primary); width: auto; align-self: flex-start; display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    Send Test Email
+                </button>
+            </div>
+
+            <!-- Global Target Competitors -->
+            <div class="glass-panel settings-section">
+                <div class="settings-header">
+                    <h3>Global Target Competitors</h3>
+                    <p>Specify competitor names separated by commas (e.g. "Apple, Amazon, Samsung"). If set, Hawkscan will exclusively compare your prices against these sellers across all products.</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <input type="text" id="global-competitors-input" placeholder="Leave blank to scan all competitors..." style="flex: 1;" value="{{ current_competitors }}">
+                    <button id="save-competitors-btn" style="width: auto; padding: 0.75rem 1.5rem; white-space: nowrap;">Save Settings</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Script for Theme Toggle & APIs -->
+    <script>
+        // Theme Logic
+        const themeToggle = document.getElementById('theme-toggle');
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggle.checked = true;
+        }
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // Test Email
+        document.getElementById('test-email-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('test-email-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Sending...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/test-email', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Test email sent successfully! Please check your inbox.');
+                } else {
+                    alert('Failed to send test email: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('An error occurred.');
+            }
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+
+        // Save Competitors
+        document.getElementById('save-competitors-btn').addEventListener('click', async () => {
+            const competitors = document.getElementById('global-competitors-input').value;
+            const btn = document.getElementById('save-competitors-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Saving...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/settings/competitors', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ competitors })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Target competitors saved successfully!');
+                } else {
+                    alert('Failed to save settings.');
+                }
+            } catch (e) {
+                alert('An error occurred while saving.');
+            }
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>

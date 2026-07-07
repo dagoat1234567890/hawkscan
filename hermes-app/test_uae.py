@@ -2,10 +2,10 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from hermes import HermesAgent
+from hermes import HawkscanAgent
 
 def test():
-    agent = HermesAgent()
+    agent = HawkscanAgent()
     print("Testing Amazon.ae...")
     res1 = agent.analyze_prices("iPhone 15", "Acme Electronics", "Amazon.ae")
     print("Amazon.ae Result:", res1)
