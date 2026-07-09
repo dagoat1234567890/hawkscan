@@ -86,20 +86,20 @@
         <div class="blob blob-2"></div>
     </div>
 
-    <nav>
-        <a href="/" class="logo">Hawkscan.</a>
-        <div class="nav-links" style="display: flex; align-items: center;">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/chat">Chat</a>
-            <a href="/history">History</a>
-            <a href="/pricing">Pricing</a>
-            <a href="/settings" class="active">Settings</a>
-            <a href="/settings">Settings</a>
-                <a href="/logout" class="logout-btn" style="margin-left: 2rem;">Logout</a>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo">Hawkscan</div>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}">Products</a>
+                <a href="{{ url_for('history') }}">Global History</a>
+                <a href="{{ url_for('chat_view') }}">Agent AI</a>
+                <a href="/settings" class="active">Settings</a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+            </div>
         </div>
     </nav>
 
-    <div class="main-content" style="padding: 2rem 5%;">
+    <div class="dashboard-container" style="margin-top: 3rem;">
         <div style="max-width: 800px; margin: 0 auto; margin-bottom: 2rem;">
             <h1 style="font-family: 'Outfit', sans-serif; font-size: 2.5rem; color: var(--text-primary); margin-bottom: 0.5rem;">Settings</h1>
             <p style="color: var(--text-secondary); font-size: 1.1rem;">Manage your account, preferences, and tracking rules.</p>
