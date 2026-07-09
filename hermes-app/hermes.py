@@ -706,7 +706,7 @@ class HawkscanAgent:
                 result["conclusion"] = f"⚠️ Could not find exact product on {original_platform}. Showing reference prices from Amazon.ae instead: " + result["conclusion"]
                 
             # CATALOG URL VALIDATION
-            if catalog_url and not is_fallback and my_price:
+            if catalog_url and not is_fallback and isinstance(my_price, (int, float)):
                 avg_scraped = result.get("stats", {}).get("avg")
                 if avg_scraped:
                     variance = abs(my_price - avg_scraped) / avg_scraped
