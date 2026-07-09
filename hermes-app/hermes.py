@@ -665,8 +665,9 @@ class HawkscanAgent:
         2. CRITICAL FOR MY_PRICE: Verify that the 'Title' of the product matches the requested product specs: '{product_name}'. However, be extremely lenient with purely cosmetic variations: if our company sells a blue version or special packaging, and the requested product is generic, ACCEPT IT as 'my_price'. If our exact product is completely missing, set "my_price" to null.
         3. Identify real competitor listings ONLY from '{platform_domain}'. Ignore listings from other websites. CRITICAL: Do NOT extract any listings as competitors if the seller contains the word '{company_name.split()[0]}'! They are our own products!
         4. CRITICAL SPECIFICATION CHECK: Verify that the competitor product core specifications match '{product_name}'. Ensure all extracted prices are in AED.
-           - BRAND STRICTNESS: If '{product_name}' explicitly includes a brand name (e.g., 'Apple', 'Samsung', 'L\\'Oreal'), you MUST ONLY extract competitors from that exact same brand family. Reject all other brands.
-           - VARIANT LENIENCY: Be highly lenient with cosmetic variations like color, box art, or generic editions. Do NOT exclude competitors just because they have a different color or cosmetic variant, as long as the core model, hardware, capacity, volume, and brand strictly match!
+           - KEYWORD STRICTNESS: The competitor title MUST logically represent the same core product. If '{product_name}' is a device, do NOT extract cases, screen protectors, or accessories. If it is a gold/silver bar, do NOT extract necklaces or jewelry.
+           - CONDITION STRICTNESS: Do NOT extract prices for 'Renewed', 'Refurbished', or 'Used' products UNLESS '{product_name}' explicitly contains those words!
+           - VARIANT LENIENCY: Be lenient with purely cosmetic variations (like color), BUT the core model, hardware, weight/capacity (e.g. 100g, 128GB), and brand MUST strictly match!
 """
         if target_competitors:
             prompt += f"""        5. CRITICAL COMPETITOR FILTER: ONLY extract competitor listings if the Store/Seller name matches or contains one of the following: {target_competitors}. Completely ignore any sellers not in this list. Do NOT extract them under any circumstances.

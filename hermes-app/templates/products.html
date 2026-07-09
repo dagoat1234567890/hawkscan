@@ -324,8 +324,13 @@
                     <label>Your Company Name</label>
                     <input type="text" id="modal-company-name" placeholder="e.g., Electronics LLC" required>
                 </div>
-                <!-- Hardcoded Platform: Amazon.ae -->
-                <input type="hidden" id="modal-platform" value="Amazon.ae">
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="modal-platform" required>
+                        <option value="Amazon.ae">Amazon.ae</option>
+                        <option value="Noon">Noon</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label>Official Catalog Link (Optional)</label>
                     <input type="url" id="modal-catalog-url" placeholder="https://amazon.ae/your-product">
