@@ -376,6 +376,8 @@ def api_analyze():
         
     return jsonify(results)
 
+import time
+
 def background_scan(user_id):
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
@@ -397,26 +399,41 @@ def background_scan(user_id):
     
     for tracker in trackers:
         t_id, product_name, company_name, platform, catalog_url = tracker
+        
+        # Add a small 1-second delay to prevent IP bans or rate limits
+        time.sleep(1)
+        
         try:
             results = agent.analyze_prices(product_name, company_name, platform, catalog_url=catalog_url, target_competitors=target_competitors)
-            if "my_price" in results and isinstance(results["my_price"], (int, float)):
-                my_price = float(results["my_price"])
+            
+            def safe_float(v):
+                try:
+                    return float(v)
+                except (ValueError, TypeError):
+                    return None
+                    
+            my_price = safe_float(results.get("my_price"))
+            if my_price is not None:
                 cursor.execute("UPDATE trackers SET baseline_price = ? WHERE id = ? AND baseline_price IS NULL", (my_price, t_id))
             
-            market_avg = results.get("market_avg")
-            market_high = results.get("market_high")
-            market_low = results.get("market_low")
+            market_avg = safe_float(results.get("market_avg"))
+            market_high = safe_float(results.get("market_high"))
+            market_low = safe_float(results.get("market_low"))
             
-            if market_avg is not None and isinstance(market_avg, (int, float)):
+            cursor.execute('''INSERT INTO scan_history (tracker_id, my_price, market_avg, market_high, market_low) 
+                              VALUES (?, ?, ?, ?, ?)''', (t_id, my_price, market_avg, market_high, market_low))
+            
+            if market_avg is not None:
                 cursor.execute('''UPDATE trackers 
                                   SET last_price = ?, last_market_avg = ?, last_market_high = ?, last_market_low = ?, 
                                       scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
                                   WHERE id = ?''', (my_price, market_avg, market_high, market_low, t_id))
-                
-                cursor.execute('''INSERT INTO scan_history (tracker_id, my_price, market_avg, market_high, market_low) 
-                                  VALUES (?, ?, ?, ?, ?)''', (t_id, my_price, market_avg, market_high, market_low))
-                
-                conn.commit()
+            else:
+                cursor.execute('''UPDATE trackers 
+                                  SET last_price = ?, scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
+                                  WHERE id = ?''', (my_price, t_id))
+            
+            conn.commit()
         except Exception as e:
             print(f"Background scan error for {product_name}: {e}")
             

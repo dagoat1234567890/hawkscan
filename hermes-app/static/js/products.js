@@ -130,6 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="color: #ef4444;">${marketHigh}</td>
                 <td style="color: #10b981;">${marketLow}</td>
                 <td style="display: flex; gap: 1.5rem; align-items: center;">
+                    <button id="scan-btn-${product.id}" onclick="event.stopPropagation(); window.scanProduct(${product.id}, '${product.product_name.replace(/'/g, "\\'")}', '${product.company_name.replace(/'/g, "\\'")}', '${product.platform.replace(/'/g, "\\'")}')" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 6px; font-weight: 500; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;" title="Scan Now">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><polyline points="21 3 21 8 16 8"></polyline></svg>
+                        Scan
+                    </button>
                     <div class="toggle-container" style="display: flex; align-items: center; gap: 0.5rem;" onclick="event.stopPropagation();">
                         <label class="toggle-switch">
                             <input type="checkbox" onchange="window.toggleAnalysis(${product.id}, this)" ${product.is_active ? 'checked' : ''}>
@@ -290,6 +294,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    window.scanProduct = async (productId, productName, companyName, platform) => {
+        const btn = document.getElementById(`scan-btn-${productId}`);
+        if (!btn) return;
+        
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spin"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Scanning...`;
+        
+        try {
+            const res = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    product_name: productName,
+                    company_name: companyName,
+                    platform: platform
+                })
+            });
+            
+            if (res.ok) {
+                await loadProducts();
+            } else {
+                alert('Failed to scan product');
+            }
+        } catch (error) {
+            console.error('Error scanning product:', error);
+            alert('Failed to connect to the server');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><polyline points="21 3 21 8 16 8"></polyline></svg> Scan`;
+        }
+    };
+
     window.deleteProduct = async (productId) => {
         if (!confirm("Are you sure you want to delete this product?")) {
             return;
