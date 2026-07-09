@@ -665,14 +665,22 @@ class HawkscanAgent:
         2. CRITICAL FOR MY_PRICE: Verify that the 'Title' of the product matches the requested product specs: '{product_name}'. However, be extremely lenient with purely cosmetic variations: if our company sells a blue version or special packaging, and the requested product is generic, ACCEPT IT as 'my_price'. If our exact product is completely missing, set "my_price" to null.
         3. Identify real competitor listings ONLY from '{platform_domain}'. Ignore listings from other websites. CRITICAL: Do NOT extract any listings as competitors if the seller contains the word '{company_name.split()[0]}'! They are our own products!
         4. CRITICAL SPECIFICATION CHECK: Verify that the competitor product core specifications match '{product_name}'. Ensure all extracted prices are in AED.
-           - KEYWORD STRICTNESS: The competitor title MUST logically represent the same core product. If '{product_name}' is a device, do NOT extract cases, screen protectors, or accessories. If it is a gold/silver bar, do NOT extract necklaces or jewelry.
-           - CONDITION STRICTNESS: Do NOT extract prices for 'Renewed', 'Refurbished', or 'Used' products UNLESS '{product_name}' explicitly contains those words!
-           - VARIANT LENIENCY: Be lenient with purely cosmetic variations (like color), BUT the core model, hardware, weight/capacity (e.g. 100g, 128GB), and brand MUST strictly match!
+           - KEYWORD STRICTNESS: The competitor title MUST logically represent the same core product. If '{product_name}' is a device, do NOT extract cases, screen protectors, or accessories. If it is a gold/silver bar, do NOT extract necklaces, jewelry, or coins.
+           - MATERIAL MATCHING: If '{product_name}' specifies "Gold", REJECT any product containing "Silver". If '{product_name}' specifies "Silver", REJECT any product containing "Gold".
+           - CONDITION STRICTNESS: Do NOT extract prices for 'Renewed', 'Refurbished', or 'Used' products UNLESS '{product_name}' explicitly contains those words! Additionally, if a single listing contains multiple prices (e.g. 'AED 355' and 'Used: AED 345' or 'More Buying Choices: AED 345'), you MUST extract the primary 'New' price (355) and completely IGNORE the secondary/used prices.
+           - VARIANT LENIENCY: Be lenient with purely cosmetic variations (like color), BUT the core model, hardware, weight/capacity (e.g. 100g, 1 Ounce, 128GB), and brand MUST strictly match!
 """
         if target_competitors:
             prompt += f"""        5. CRITICAL COMPETITOR FILTER: ONLY extract competitor listings if the Store/Seller name matches or contains one of the following: {target_competitors}. Completely ignore any sellers not in this list. Do NOT extract them under any circumstances.
 """
         
+        prompt += """
+        6. EXTRACTING PRICES: Output the extracted data as a pure, minified JSON array of objects. 
+           - **CRITICAL: PRESERVE CENTS/DECIMALS!** If a price appears as 'AED 397 . 02' or '397.02', you MUST extract `397.02`. Do NOT round to `397.0`. Always keep the exact decimal value.
+           Format exactly like this:
+           [{"title": "Competitor Product Title", "price": 450.99, "url": "URL if available"}]
+           Ensure the JSON is perfectly formatted. Do NOT include markdown blocks like ```json. Just output the array.
+        """
         prompt += f"""
         Format the output EXACTLY as JSON. If no valid competitor is found (e.g., you are the sole seller), return an empty list for competitors. DO NOT include markdown formatting. DO NOT include explanation text or reasoning. ONLY output valid JSON.        
         JSON Schema:

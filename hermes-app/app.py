@@ -412,13 +412,15 @@ def background_scan(user_id):
                 except (ValueError, TypeError):
                     return None
                     
-            my_price = safe_float(results.get("my_price"))
+            my_price_raw = results.get("my_price")
+            my_price = safe_float(my_price_raw) if my_price_raw != "Not Found" else None
             if my_price is not None:
                 cursor.execute("UPDATE trackers SET baseline_price = ? WHERE id = ? AND baseline_price IS NULL", (my_price, t_id))
             
-            market_avg = safe_float(results.get("market_avg"))
-            market_high = safe_float(results.get("market_high"))
-            market_low = safe_float(results.get("market_low"))
+            stats = results.get("stats", {})
+            market_avg = safe_float(stats.get("avg"))
+            market_high = safe_float(stats.get("max"))
+            market_low = safe_float(stats.get("min"))
             
             cursor.execute('''INSERT INTO scan_history (tracker_id, my_price, market_avg, market_high, market_low) 
                               VALUES (?, ?, ?, ?, ?)''', (t_id, my_price, market_avg, market_high, market_low))
