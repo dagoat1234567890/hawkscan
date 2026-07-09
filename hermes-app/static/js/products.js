@@ -382,54 +382,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const scanAllBtn = document.getElementById('scan-all-btn');
     const scanAllProgress = document.getElementById('scan-all-progress');
     
-    if (scanAllBtn) {
-        scanAllBtn.addEventListener('click', async () => {
-            try {
-                // Fetch all trackers to scan
-                const res = await fetch('/api/trackers');
-                if (!res.ok) return;
-                const products = await res.json();
-                
-                if (products.length === 0) {
-                    alert("No products to scan!");
-                    return;
-                }
-                
+    let scanPollInterval = null;
+
+    async function checkScanStatus() {
+        try {
+            const res = await fetch('/api/scan/status');
+            if (!res.ok) return;
+            const statusData = await res.json();
+            
+            if (statusData.status === 'running') {
                 scanAllBtn.disabled = true;
                 scanAllBtn.style.opacity = '0.5';
                 scanAllProgress.style.display = 'inline';
+                scanAllProgress.textContent = `Scanning ${statusData.completed}/${statusData.total}...`;
                 
-                let completed = 0;
-                scanAllProgress.textContent = `Scanning 0/${products.length}...`;
-                
-                const delay = ms => new Promise(res => setTimeout(res, ms));
-
-                for (const product of products) {
-                    try {
-                        await fetch('/api/analyze', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                product_name: product.product_name,
-                                company_name: product.company_name,
-                                platform: product.platform
-                            })
-                        });
-                    } catch (e) {
-                        console.error(`Failed to scan product ${product.product_name}`, e);
-                    }
-                    completed++;
-                    scanAllProgress.textContent = `Scanning ${completed}/${products.length}...`;
-                    
-                    // Add a small delay between products to prevent AI rate limits
-                    if (completed < products.length) {
-                        await delay(2500);
-                    }
+                if (!scanPollInterval) {
+                    scanPollInterval = setInterval(checkScanStatus, 2000);
                 }
+            } else if (statusData.status === 'completed' && scanPollInterval) {
+                clearInterval(scanPollInterval);
+                scanPollInterval = null;
                 
                 scanAllProgress.textContent = `Scan Complete!`;
-                
-                // Reload dashboard data
                 await loadProducts();
                 
                 setTimeout(() => {
@@ -437,7 +411,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     scanAllBtn.disabled = false;
                     scanAllBtn.style.opacity = '1';
                 }, 2000);
+            }
+        } catch (error) {
+            console.error("Error polling scan status", error);
+        }
+    }
+
+    if (scanAllBtn) {
+        scanAllBtn.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/scan/start', { method: 'POST' });
+                if (!res.ok) return;
                 
+                scanAllBtn.disabled = true;
+                scanAllBtn.style.opacity = '0.5';
+                scanAllProgress.style.display = 'inline';
+                scanAllProgress.textContent = `Starting scan...`;
+                
+                if (!scanPollInterval) {
+                    scanPollInterval = setInterval(checkScanStatus, 2000);
+                }
             } catch (error) {
                 console.error("Scan All error:", error);
                 scanAllBtn.disabled = false;
@@ -446,6 +439,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Check if scan is already running on page load
+    checkScanStatus();
 
     // Initial load
     loadProducts();

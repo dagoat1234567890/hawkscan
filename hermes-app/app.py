@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import threading
 from functools import wraps
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, flash
 from dotenv import load_dotenv
@@ -11,6 +12,7 @@ from scheduler import run_analysis_job
 load_dotenv()
 
 DATABASE = "users.db"
+SCAN_TASKS = {}
 
 def init_db():
     conn = sqlite3.connect(DATABASE)
@@ -373,6 +375,74 @@ def api_analyze():
         conn.close()
         
     return jsonify(results)
+
+def background_scan(user_id):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, product_name, company_name, platform, catalog_url FROM trackers WHERE user_id = ? AND is_active = 1", (user_id,))
+    trackers = cursor.fetchall()
+    
+    if not trackers:
+        SCAN_TASKS[user_id] = {"status": "completed", "total": 0, "completed": 0}
+        conn.close()
+        return
+
+    SCAN_TASKS[user_id] = {"status": "running", "total": len(trackers), "completed": 0}
+    
+    cursor.execute("SELECT target_competitors FROM users WHERE id = ?", (user_id,))
+    comp_row = cursor.fetchone()
+    target_competitors = comp_row[0] if comp_row and comp_row[0] else None
+    
+    agent = HawkscanAgent()
+    
+    for tracker in trackers:
+        t_id, product_name, company_name, platform, catalog_url = tracker
+        try:
+            results = agent.analyze_prices(product_name, company_name, platform, catalog_url=catalog_url, target_competitors=target_competitors)
+            if "my_price" in results and isinstance(results["my_price"], (int, float)):
+                my_price = float(results["my_price"])
+                cursor.execute("UPDATE trackers SET baseline_price = ? WHERE id = ? AND baseline_price IS NULL", (my_price, t_id))
+            
+            market_avg = results.get("market_avg")
+            market_high = results.get("market_high")
+            market_low = results.get("market_low")
+            
+            if market_avg is not None and isinstance(market_avg, (int, float)):
+                cursor.execute('''UPDATE trackers 
+                                  SET last_price = ?, last_market_avg = ?, last_market_high = ?, last_market_low = ?, 
+                                      scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
+                                  WHERE id = ?''', (my_price, market_avg, market_high, market_low, t_id))
+                
+                cursor.execute('''INSERT INTO scan_history (tracker_id, my_price, market_avg, market_high, market_low) 
+                                  VALUES (?, ?, ?, ?, ?)''', (t_id, my_price, market_avg, market_high, market_low))
+                
+                conn.commit()
+        except Exception as e:
+            print(f"Background scan error for {product_name}: {e}")
+            
+        SCAN_TASKS[user_id]["completed"] += 1
+        
+    SCAN_TASKS[user_id]["status"] = "completed"
+    conn.close()
+
+@app.route('/api/scan/start', methods=['POST'])
+@login_required_api
+def api_scan_start():
+    user_id = session.get('user_id')
+    if user_id in SCAN_TASKS and SCAN_TASKS[user_id].get("status") == "running":
+        return jsonify({"success": False, "message": "Scan already in progress"})
+    
+    thread = threading.Thread(target=background_scan, args=(user_id,))
+    thread.daemon = True
+    thread.start()
+    return jsonify({"success": True})
+
+@app.route('/api/scan/status', methods=['GET'])
+@login_required_api
+def api_scan_status():
+    user_id = session.get('user_id')
+    status = SCAN_TASKS.get(user_id, {"status": "idle", "total": 0, "completed": 0})
+    return jsonify(status)
 
 @app.route('/api/settings/competitors', methods=['GET', 'POST'])
 @login_required_api

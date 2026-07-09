@@ -43,10 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const row = document.createElement('tr');
         
         const dateStr = new Date(item.timestamp + 'Z').toLocaleString();
-        const myPrice = item.my_price ? `AED ${item.my_price.toLocaleString()}` : '-';
-        const avg = item.market_avg ? `AED ${item.market_avg.toLocaleString()}` : '-';
-        const high = item.market_high ? `AED ${item.market_high.toLocaleString()}` : '-';
-        const low = item.market_low ? `AED ${item.market_low.toLocaleString()}` : '-';
+        const myPrice = (item.my_price !== null && !isNaN(item.my_price)) ? `AED ${item.my_price.toLocaleString()}` : '-';
+        const avg = (item.market_avg !== null && !isNaN(item.market_avg)) ? `AED ${item.market_avg.toLocaleString()}` : '-';
+        const high = (item.market_high !== null && !isNaN(item.market_high)) ? `AED ${item.market_high.toLocaleString()}` : '-';
+        const low = (item.market_low !== null && !isNaN(item.market_low)) ? `AED ${item.market_low.toLocaleString()}` : '-';
 
         // Added padding: 1.5rem 2rem; and font-size: 1.1rem; to all cells (td)
         row.innerHTML = `
