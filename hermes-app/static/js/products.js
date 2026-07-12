@@ -128,10 +128,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return '#';
             };
 
-            const makePriceLink = (priceText, isBaseline=false) => {
+            const makePriceLink = (priceText, type = null) => {
                 let url = getSearchUrl();
-                if (isBaseline && product.catalog_url) {
+                if (type === 'baseline' && product.catalog_url) {
                     url = product.catalog_url;
+                } else if (type === 'high' && product.last_market_high_url) {
+                    url = product.last_market_high_url;
+                } else if (type === 'low' && product.last_market_low_url) {
+                    url = product.last_market_low_url;
                 }
                 return `<a href="${url}" target="_blank" class="price-link" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 2px;" title="View on ${product.platform}" onmouseover="this.style.borderBottom='1px solid var(--accent-primary)'" onmouseout="this.style.borderBottom='1px dashed rgba(255,255,255,0.3)'">${priceText}</a>`;
             };
@@ -141,10 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${product.product_name}
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">${product.company_name} &bull; <span style="text-transform: uppercase; color: var(--accent-primary);">${product.platform}</span></div>
                 </td>
-                <td style="color: var(--accent-secondary); font-weight: 600;">${makePriceLink(baseline, true)}</td>
-                <td>${makePriceLink(marketAvg)}</td>
-                <td style="color: #ef4444;">${makePriceLink(marketHigh)}</td>
-                <td style="color: #10b981;">${makePriceLink(marketLow)}</td>
+                <td style="color: var(--accent-secondary); font-weight: 600;">${makePriceLink(baseline, 'baseline')}</td>
+                <td>${makePriceLink(marketAvg, 'avg')}</td>
+                <td style="color: #ef4444;">${makePriceLink(marketHigh, 'high')}</td>
+                <td style="color: #10b981;">${makePriceLink(marketLow, 'low')}</td>
                 <td style="display: flex; gap: 1.5rem; align-items: center;">
                     <button id="scan-btn-${product.id}" onclick="event.stopPropagation(); window.scanProduct(${product.id}, '${product.product_name.replace(/'/g, "\\'")}', '${product.company_name.replace(/'/g, "\\'")}', '${product.platform.replace(/'/g, "\\'")}')" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 6px; font-weight: 500; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;" title="Scan Now">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><polyline points="21 3 21 8 16 8"></polyline></svg>

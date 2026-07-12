@@ -766,6 +766,9 @@ class HawkscanAgent:
         else:
             position = "Average"
             conclusion = f"Your price is in the middle of the pack. Average is AED {avg_price:.2f}."        
+        min_url = next((c.get("url") for c in competitors if c.get("price") == min_price), None)
+        max_url = next((c.get("url") for c in competitors if c.get("price") == max_price), None)
+        
         return {
             "platform": platform_source,
             "my_price": my_price,
@@ -774,7 +777,9 @@ class HawkscanAgent:
             "position": position,
             "stats": {
                 "min": min_price,
+                "min_url": min_url,
                 "max": max_price,
+                "max_url": max_url,
                 "avg": round(avg_price, 2)
             }
         }
