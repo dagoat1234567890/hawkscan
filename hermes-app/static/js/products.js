@@ -118,14 +118,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const marketHigh = product.last_market_high ? `AED ${parseFloat(product.last_market_high).toLocaleString()}` : '--';
             const marketLow = product.last_market_low ? `AED ${parseFloat(product.last_market_low).toLocaleString()}` : '--';
 
-            const makePriceLink = (priceText) => product.catalog_url ? `<a href="${product.catalog_url}" target="_blank" style="color: inherit; text-decoration: none;" title="View on ${product.platform}">${priceText}</a>` : priceText;
+            const getSearchUrl = () => {
+                const platform = product.platform.toLowerCase();
+                if (platform.includes('amazon')) {
+                    return `https://www.amazon.ae/s?k=${encodeURIComponent(product.product_name)}`;
+                } else if (platform.includes('noon')) {
+                    return `https://www.noon.com/uae-en/search?q=${encodeURIComponent(product.product_name)}`;
+                }
+                return '#';
+            };
+
+            const makePriceLink = (priceText, isBaseline=false) => {
+                let url = getSearchUrl();
+                if (isBaseline && product.catalog_url) {
+                    url = product.catalog_url;
+                }
+                return `<a href="${url}" target="_blank" class="price-link" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 2px;" title="View on ${product.platform}" onmouseover="this.style.borderBottom='1px solid var(--accent-primary)'" onmouseout="this.style.borderBottom='1px dashed rgba(255,255,255,0.3)'">${priceText}</a>`;
+            };
 
             row.innerHTML = `
                 <td style="font-weight: 500; color: var(--text-primary);">
                     ${product.product_name}
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">${product.company_name} &bull; <span style="text-transform: uppercase; color: var(--accent-primary);">${product.platform}</span></div>
                 </td>
-                <td style="color: var(--accent-secondary); font-weight: 600;">${makePriceLink(baseline)}</td>
+                <td style="color: var(--accent-secondary); font-weight: 600;">${makePriceLink(baseline, true)}</td>
                 <td>${makePriceLink(marketAvg)}</td>
                 <td style="color: #ef4444;">${makePriceLink(marketHigh)}</td>
                 <td style="color: #10b981;">${makePriceLink(marketLow)}</td>
