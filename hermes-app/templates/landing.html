@@ -152,10 +152,209 @@
             color: var(--text-secondary);
             line-height: 1.6;
         }
+
+        /* 2026 Aesthetics Styles */
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, #ffffff, var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(91, 83, 237, 0.3);
+        }
+
+        .technology-section {
+            padding: 6rem 10%;
+            background: rgba(15, 23, 42, 0.4);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+        }
+
+        .tech-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .tech-desc {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .acronym-grid {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-top: 3rem;
+        }
+
+        .acronym-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(91, 83, 237, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            min-width: 150px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(91, 83, 237, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .acronym-box:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 30px rgba(240, 56, 139, 0.3);
+        }
+
+        .acronym-letter {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 15px var(--accent-primary);
+        }
+
+        .acronym-word {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* How It Works & Pricing */
+        .info-section {
+            padding: 6rem 10%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            position: relative;
+        }
+
+        .step-card {
+            background: var(--glass-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 2px;
+            text-align: center;
+            position: relative;
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .step-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .step-card-content {
+            position: relative;
+            z-index: 1;
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 22px;
+            padding: 3rem 2rem;
+            height: 100%;
+        }
+
+        .step-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(transparent, transparent, transparent, var(--accent-primary));
+            animation: rotateGlow 4s linear infinite;
+            opacity: 0.2;
+            transition: opacity 0.3s;
+        }
+        
+        .step-card:hover::before {
+            opacity: 0.8;
+        }
+
+        @keyframes rotateGlow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .step-number {
+            font-size: 4rem;
+            font-weight: 800;
+            color: rgba(255,255,255,0.05);
+            position: absolute;
+            top: -10px;
+            right: 10px;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            backdrop-filter: blur(20px);
+            transition: transform 0.3s;
+            position: relative;
+        }
+        
+        .pricing-card.pro {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 40px rgba(91, 83, 237, 0.2);
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .price {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 1.5rem 0;
+        }
+        
+        .price span {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .modern-footer {
+            background: rgba(10, 15, 30, 0.9);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding: 4rem 10% 2rem;
+            text-align: center;
+        }
+        
+        .footer-logo {
+            font-size: 2rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
     </style>
 
 </head>
-<body>
+<body data-theme="dark">
 
     <!-- Background Blobs -->
     <div class="bg-blobs">
@@ -236,21 +435,111 @@
                 <p class="feature-desc">A gorgeous, glassmorphism UI that gives you instant insights, Odoo-style filtering, and a comprehensive scan history.</p>
             </div>
         </section>
-        <section>
-            <h1>Our technology</h1>
-            <ul>
-                <p>We used advanced software and technology to build agentic systems.</p>
-                <p>The name of the software is called p-a-a-s-a. This name might be odd but has a deeper meaning.</p>
-                <li><strong>P-Price</strong></li>
-                <li><strong>A-Agent</strong></li>
-                <li><strong>A-And</strong></li>
-                <li><strong>S-Sales</strong></li>
-                <li><strong>A-Accelerator</strong></li>
+        <!-- Technology Section -->
+        <section class="technology-section">
+            <div class="tech-container">
+                <h2 class="section-title">Our Technology</h2>
+                <p class="tech-desc">We use advanced software and technology to build agentic systems. Our core intelligence engine is powered by our proprietary architecture, uniquely designed for precision tracking.</p>
+                
+                <div class="acronym-grid">
+                    <div class="acronym-box">
+                        <div class="acronym-letter">P</div>
+                        <div class="acronym-word">Price</div>
+                    </div>
+                    <div class="acronym-box">
+                        <div class="acronym-letter">A</div>
+                        <div class="acronym-word">Agent</div>
+                    </div>
+                    <div class="acronym-box">
+                        <div class="acronym-letter">A</div>
+                        <div class="acronym-word">And</div>
+                    </div>
+                    <div class="acronym-box">
+                        <div class="acronym-letter">S</div>
+                        <div class="acronym-word">Sales</div>
+                    </div>
+                    <div class="acronym-box">
+                        <div class="acronym-letter">A</div>
+                        <div class="acronym-word">Accelerator</div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-            </ul>
+        <!-- How It Works Section -->
+        <section class="info-section">
+            <h2 class="section-title">How It Works</h2>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-card-content">
+                        <div class="step-number">01</div>
+                        <div class="feature-icon">🔌</div>
+                        <h3 class="feature-title">Connect</h3>
+                        <p class="feature-desc">Input your target product URLs from Noon or Amazon. Our system initializes the tracking nodes immediately.</p>
+                    </div>
+                </div>
+                <div class="step-card">
+                    <div class="step-card-content">
+                        <div class="step-number">02</div>
+                        <div class="feature-icon">⚡</div>
+                        <h3 class="feature-title">Scan</h3>
+                        <p class="feature-desc">PAASA agents dynamically scrape real-time market data, intelligently bypassing anti-bot protections.</p>
+                    </div>
+                </div>
+                <div class="step-card">
+                    <div class="step-card-content">
+                        <div class="step-number">03</div>
+                        <div class="feature-icon">🚀</div>
+                        <h3 class="feature-title">Dominate</h3>
+                        <p class="feature-desc">Receive actionable pricing insights directly to your dashboard and drastically increase your sales volume.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
+        <!-- Pricing Section -->
+        <section class="info-section">
+            <h2 class="section-title">Transparent Pricing</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3 class="feature-title">Free Tier</h3>
+                    <p class="feature-desc">Perfect for testing the waters.</p>
+                    <div class="price">AED 0<span>/mo</span></div>
+                    <ul style="list-style: none; padding: 0; color: var(--text-secondary); margin-bottom: 2rem; text-align: left;">
+                        <li style="margin-bottom: 1rem;">✓ Up to 10 Scans/day</li>
+                        <li style="margin-bottom: 1rem;">✓ Basic Market Averages</li>
+                        <li>✓ 24-hour History</li>
+                    </ul>
+                    <a href="{{ url_for('sign_up') }}" class="btn btn-secondary" style="display: block; text-align: center;">Get Started</a>
+                </div>
+                
+                <div class="pricing-card pro">
+                    <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--accent-primary); color: white; padding: 5px 15px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 0 15px rgba(91, 83, 237, 0.5);">MOST POPULAR</div>
+                    <h3 class="feature-title">Dominator Pro</h3>
+                    <p class="feature-desc">For serious e-commerce sellers.</p>
+                    <div class="price">AED 299<span>/mo</span></div>
+                    <ul style="list-style: none; padding: 0; color: var(--text-secondary); margin-bottom: 2rem; text-align: left;">
+                        <li style="margin-bottom: 1rem;">✓ Unlimited Scans</li>
+                        <li style="margin-bottom: 1rem;">✓ Full PAASA Agent Access</li>
+                        <li style="margin-bottom: 1rem;">✓ 24/7 Automated Tracking</li>
+                        <li>✓ Unlimited History & Exports</li>
+                    </ul>
+                    <a href="{{ url_for('sign_up') }}" class="btn btn-primary" style="display: block; text-align: center;">Upgrade Now</a>
+                </div>
+            </div>
         </section>
     </main>
+
+    <footer class="modern-footer">
+        <div class="footer-logo">Hawkscan</div>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">Next-Generation Market Intelligence powered by PAASA.</p>
+        <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;">
+            <a href="#" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Privacy Policy</a>
+            <a href="#" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Terms of Service</a>
+            <a href="#" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Contact Us</a>
+        </div>
+        <p style="color: rgba(255,255,255,0.2); font-size: 0.9rem;">&copy; 2026 Hawkscan Intelligence. All rights reserved.</p>
+    </footer>
 
 </body>
 </html>
