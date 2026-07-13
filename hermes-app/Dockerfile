@@ -26,4 +26,4 @@ EXPOSE 5000
 
 # Run the app using Gunicorn for production
 # We bind to 0.0.0.0 so it's accessible from outside the container
-CMD ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "--workers", "3", "--timeout", "120", "--bind", "0.0.0.0:5000", "app:app"]

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godmode | Hawkscan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(251, 191, 36, 0.1);
+        }
+        .stat-title {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .section-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 1.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            text-align: left;
+        }
+        th, td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .btn-danger:hover {
+            background: #ef4444;
+            color: white;
+        }
+        .error-endpoint {
+            font-family: monospace;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1" style="background: rgba(251, 191, 36, 0.2);"></div>
+        <div class="blob blob-2" style="background: rgba(245, 158, 11, 0.2);"></div>
+    </div>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo" style="color: #fbbf24;">Hawkscan Godmode</div>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}">Exit Godmode</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container" style="margin-top: 3rem;">
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 2.5rem; margin-bottom: 2rem; color: var(--text-primary);">System Overview</h1>
+        
+        <div class="stats-grid" id="stats-container">
+            <div class="stat-card">
+                <span class="stat-title">Total Users</span>
+                <span class="stat-value" id="stat-users">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-title">Active Trackers</span>
+                <span class="stat-value" id="stat-trackers">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-title">Total Scans Executed</span>
+                <span class="stat-value" id="stat-scans">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-title">Claude Tokens Used</span>
+                <span class="stat-value" id="stat-tokens">-</span>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2 class="section-title">User Management</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Active Trackers</th>
+                        <th>Tokens Consumed</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body">
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-card" style="border-color: rgba(239, 68, 68, 0.3);">
+            <h2 class="section-title" style="color: #fca5a5;">Recent System Errors</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>User</th>
+                        <th>Endpoint</th>
+                        <th>Error Message</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                    <tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function fetchAdminData() {
+            try {
+                // Fetch Stats
+                const statsRes = await fetch('/api/admin/stats');
+                if (!statsRes.ok) throw new Error("Failed to load stats");
+                const stats = await statsRes.json();
+                document.getElementById('stat-users').innerText = stats.users.toLocaleString();
+                document.getElementById('stat-trackers').innerText = stats.active_trackers.toLocaleString();
+                document.getElementById('stat-scans').innerText = stats.total_scans.toLocaleString();
+                document.getElementById('stat-tokens').innerText = stats.total_tokens.toLocaleString();
+
+                // Fetch Users
+                const usersRes = await fetch('/api/admin/users');
+                const usersData = await usersRes.json();
+                const usersHtml = usersData.users.map(u => `
+                    <tr>
+                        <td>#${u.id}</td>
+                        <td>${u.email}</td>
+                        <td>${u.is_admin ? '<span style="color:#fbbf24;font-weight:600;">Admin</span>' : 'User'}</td>
+                        <td>${u.trackers}</td>
+                        <td style="font-family: monospace;">${u.tokens.toLocaleString()}</td>
+                        <td>
+                            <button class="action-btn btn-danger" onclick="deleteUser(${u.id}, '${u.email}')">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+                document.getElementById('users-table-body').innerHTML = usersHtml || '<tr><td colspan="6" style="text-align:center;">No users found.</td></tr>';
+
+                // Fetch Logs
+                const logsRes = await fetch('/api/admin/logs');
+                const logsData = await logsRes.json();
+                const logsHtml = logsData.logs.map(log => `
+                    <tr>
+                        <td style="color:var(--text-secondary); white-space:nowrap;">${log.timestamp}</td>
+                        <td>${log.user}</td>
+                        <td><span class="error-endpoint">${log.endpoint}</span></td>
+                        <td style="color: #fca5a5; font-family: monospace; font-size: 0.85rem;">${log.error}</td>
+                    </tr>
+                `).join('');
+                document.getElementById('logs-table-body').innerHTML = logsHtml || '<tr><td colspan="4" style="text-align:center;">No recent errors.</td></tr>';
+
+            } catch (error) {
+                console.error("Failed to load admin data:", error);
+                document.getElementById('users-table-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:red;">Error loading data. Are you an admin?</td></tr>';
+            }
+        }
+
+        async function deleteUser(id, email) {
+            if (!confirm(`Are you absolutely sure you want to permanently delete user ${email}? All their trackers and data will be wiped.`)) return;
+            
+            try {
+                const res = await fetch(`/api/admin/users/${id}/delete`, { method: 'POST' });
+                if (res.ok) {
+                    fetchAdminData();
+                } else {
+                    alert("Failed to delete user.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error deleting user.");
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', fetchAdminData);
+    </script>
+</body>
+</html>

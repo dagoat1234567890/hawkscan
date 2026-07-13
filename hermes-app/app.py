@@ -22,7 +22,9 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            target_competitors TEXT
+            target_competitors TEXT,
+            is_admin BOOLEAN DEFAULT 0,
+            total_tokens_used INTEGER DEFAULT 0
         )
     """)
     cursor.execute("""
@@ -51,6 +53,17 @@ def init_db():
             content TEXT NOT NULL,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (conversation_id) REFERENCES conversations (id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS error_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            error_message TEXT,
+            endpoint TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
         )
     """)
     cursor.execute("""
@@ -116,6 +129,15 @@ def login_required_api(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             return jsonify({"error": "Unauthorized. Please log in."}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session or not session.get('is_admin'):
+            from werkzeug.exceptions import NotFound
+            raise NotFound()  # Return 404 instead of 403 to keep it secretive
         return f(*args, **kwargs)
     return decorated_function
 
@@ -220,12 +242,13 @@ def login():
             
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+        cursor.execute("SELECT id, password, is_admin FROM users WHERE email = ?", (email,))
         user = cursor.fetchone()
         conn.close()
         
         if user and check_password_hash(user[1], password):
             session['user_id'] = user[0]
+            session['is_admin'] = bool(user[2])
             return redirect(url_for('dashboard'))
         else:
             flash("Invalid email or password.")
@@ -361,8 +384,19 @@ def api_analyze():
     
     target_competitors = comp_row[0] if comp_row and comp_row[0] else None
 
-    results = agent.analyze_prices(product_name, company_name, platform, catalog_url=catalog_url, target_competitors=target_competitors)
+    try:
+        results = agent.analyze_prices(product_name, company_name, platform, catalog_url=catalog_url, target_competitors=target_competitors)
+    except Exception as e:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO error_logs (user_id, error_message, endpoint) VALUES (?, ?, ?)", (user_id, str(e), "/api/analyze"))
+        conn.commit()
+        conn.close()
+        return jsonify({"error": f"Scan failed: {str(e)}"}), 500
+
     results['catalog_url'] = catalog_url
+    
+    tokens_used = results.get('tokens_used', 0)
     
     if tracker_id and 'stats' in results:
         conn = sqlite3.connect(DATABASE)
@@ -396,6 +430,9 @@ def api_analyze():
                               SET scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
                               WHERE id = ?''', (tracker_id,))
         
+        if tokens_used > 0:
+            cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ? WHERE id = ?", (tokens_used, user_id))
+            
         conn.commit()
         conn.close()
         
@@ -430,6 +467,7 @@ def background_scan(user_id):
         
         try:
             results = agent.analyze_prices(product_name, company_name, platform, catalog_url=catalog_url, target_competitors=target_competitors)
+            tokens_used = results.get('tokens_used', 0)
             
             def safe_float(v):
                 try:
@@ -463,9 +501,14 @@ def background_scan(user_id):
                                   SET last_price = ?, scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
                                   WHERE id = ?''', (my_price, t_id))
             
+            if tokens_used > 0:
+                cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ? WHERE id = ?", (tokens_used, user_id))
+                
             conn.commit()
         except Exception as e:
-            print(f"Background scan error for {product_name}: {e}")
+            cursor.execute("INSERT INTO error_logs (user_id, error_message, endpoint) VALUES (?, ?, ?)", (user_id, str(e), "background_scan"))
+            conn.commit()
+            print(f"Error scanning {product_name}: {e}")
             
         SCAN_TASKS[user_id]["completed"] += 1
         
@@ -752,6 +795,68 @@ def api_test_email():
         return jsonify({"success": True, "message": f"Test email sent to {user_email}!"})
     except Exception as e:
         return jsonify({"error": f"Failed to send email: {str(e)}"}), 500
+
+
+@app.route('/godmode')
+@admin_required
+def admin_dashboard():
+    return render_template('admin.html')
+
+@app.route('/api/admin/stats', methods=['GET'])
+@admin_required
+def api_admin_stats():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    users = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM trackers WHERE is_active = 1")
+    trackers = cursor.fetchone()[0]
+    cursor.execute("SELECT SUM(scan_count) FROM trackers")
+    scans = cursor.fetchone()[0] or 0
+    cursor.execute("SELECT SUM(total_tokens_used) FROM users")
+    tokens = cursor.fetchone()[0] or 0
+    conn.close()
+    return jsonify({"users": users, "active_trackers": trackers, "total_scans": scans, "total_tokens": tokens})
+
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def api_admin_users():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('''SELECT u.id, u.email, u.total_tokens_used, u.is_admin, COUNT(t.id) as trackers
+                      FROM users u LEFT JOIN trackers t ON u.id = t.user_id AND t.is_active = 1
+                      GROUP BY u.id''')
+    users = [{"id": row[0], "email": row[1], "tokens": row[2], "is_admin": bool(row[3]), "trackers": row[4]} for row in cursor.fetchall()]
+    conn.close()
+    return jsonify({"users": users})
+
+@app.route('/api/admin/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def api_admin_delete_user(user_id):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM error_logs WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM scan_history WHERE tracker_id IN (SELECT id FROM trackers WHERE user_id = ?)", (user_id,))
+    cursor.execute("DELETE FROM trackers WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE user_id = ?)", (user_id,))
+    cursor.execute("DELETE FROM conversations WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM password_resets WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route('/api/admin/logs', methods=['GET'])
+@admin_required
+def api_admin_logs():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('''SELECT e.id, u.email, e.error_message, e.endpoint, e.timestamp 
+                      FROM error_logs e LEFT JOIN users u ON e.user_id = u.id 
+                      ORDER BY e.timestamp DESC LIMIT 50''')
+    logs = [{"id": row[0], "user": row[1] or 'System', "error": row[2], "endpoint": row[3], "timestamp": row[4]} for row in cursor.fetchall()]
+    conn.close()
+    return jsonify({"logs": logs})
 
 if __name__ == '__main__':
     scheduler = BackgroundScheduler()

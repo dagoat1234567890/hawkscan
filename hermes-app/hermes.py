@@ -363,7 +363,8 @@ class HawkscanAgent:
                     temperature=temperature,
                     messages=messages
                 )
-                return response.content[0].text.strip()
+                tokens_used = response.usage.input_tokens + response.usage.output_tokens
+                return response.content[0].text.strip(), tokens_used
             except Exception as e:
                 error_msg = str(e)
                 print(f"Anthropic API call failed (attempt {attempt+1}/{max_retries}): {error_msg}")
@@ -505,7 +506,7 @@ class HawkscanAgent:
             prompt += f"\n[Listing {i+1}]\nURL: {listing['url']}\nText Snippet: {listing['snippet'][:1500]}\n"
             
         try:
-            raw_response = self._call_anthropic([{"role": "user", "content": prompt}], max_tokens=1500, temperature=0.1)
+            raw_response, tokens_used = self._call_anthropic([{"role": "user", "content": prompt}], max_tokens=1500, temperature=0.1)
             data = self._parse_json_response(raw_response)
             
             if not data:
@@ -513,7 +514,9 @@ class HawkscanAgent:
                 
             my_price = data.get("my_price")
             competitors = data.get("competitors", [])
-            return self._compute_market_position(product_name, my_price, competitors, "Custom Analysis")
+            result = self._compute_market_position(product_name, my_price, competitors, "Custom Analysis")
+            result['tokens_used'] = tokens_used
+            return result
         except Exception as e:
             return self._error_response(f"Custom price analysis failed: {str(e)}")
 
@@ -695,13 +698,14 @@ class HawkscanAgent:
         
         try:
             messages = [{"role": "user", "content": prompt}]
-            raw_json = self._call_anthropic(messages, max_tokens=2000)
+            raw_json, tokens_used = self._call_anthropic(messages, max_tokens=2000)
             data = self._parse_json_response(raw_json)
             my_price = data.get("my_price")
             competitors = data.get("competitors", [])
             
             # If it's a fallback run, add warning to conclusion
             result = self._compute_market_position(product_name, my_price, competitors, f"Hawkscan Scraper ({platform_source_label})")
+            result['tokens_used'] = tokens_used
             if is_fallback:
                 result["conclusion"] = f"⚠️ Could not find exact product on {original_platform}. Showing reference prices from Amazon.ae instead: " + result["conclusion"]
                 
