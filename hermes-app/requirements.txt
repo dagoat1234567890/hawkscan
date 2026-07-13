@@ -3,7 +3,6 @@ beautifulsoup4
 requests
 python-dotenv
 anthropic
-hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git
 apscheduler
 gunicorn
 curl_cffi

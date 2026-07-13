@@ -430,9 +430,13 @@ def api_analyze():
                               SET scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
                               WHERE id = ?''', (tracker_id,))
         
-        if tokens_used > 0:
-            cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ? WHERE id = ?", (tokens_used, user_id))
-            
+        conn.commit()
+        conn.close()
+        
+    if tokens_used > 0:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ? WHERE id = ?", (tokens_used, user_id))
         conn.commit()
         conn.close()
         
