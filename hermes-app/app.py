@@ -394,6 +394,14 @@ def api_analyze():
         conn.close()
         return jsonify({"error": f"Scan failed: {str(e)}"}), 500
 
+    if results.get('error'):
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        error_msg = results.get('message', 'Unknown error from agent')
+        cursor.execute("INSERT INTO error_logs (user_id, error_message, endpoint) VALUES (?, ?, ?)", (user_id, error_msg, "/api/analyze"))
+        conn.commit()
+        conn.close()
+
     results['catalog_url'] = catalog_url
     
     tokens_used = results.get('tokens_used', 0)
@@ -473,6 +481,10 @@ def background_scan(user_id):
             results = agent.analyze_prices(product_name, company_name, platform, catalog_url=catalog_url, target_competitors=target_competitors)
             tokens_used = results.get('tokens_used', 0)
             
+            if results.get('error'):
+                error_msg = results.get('message', 'Unknown error from agent')
+                cursor.execute("INSERT INTO error_logs (user_id, error_message, endpoint) VALUES (?, ?, ?)", (user_id, error_msg, "background_scan"))
+            
             def safe_float(v):
                 try:
                     return float(v)
@@ -480,7 +492,7 @@ def background_scan(user_id):
                     return None
                     
             my_price_raw = results.get("my_price")
-            my_price = safe_float(my_price_raw) if my_price_raw != "Not Found" else None
+            my_price = safe_float(my_price_raw) if my_price_raw != "Not Found" and my_price_raw != "Error" else None
             if my_price is not None:
                 cursor.execute("UPDATE trackers SET baseline_price = ? WHERE id = ? AND baseline_price IS NULL", (my_price, t_id))
             
