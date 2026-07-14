@@ -154,3 +154,56 @@ def send_password_reset_email(to_email, reset_link):
         print(f"Failed to send password reset email: {e}")
         return False
 
+
+def send_otp_email(to_email, code):
+    import os, smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    smtp_email = os.environ.get("SMTP_EMAIL")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+    if not smtp_email or not smtp_password:
+        print("SMTP_EMAIL or SMTP_PASSWORD not configured. Cannot send OTP email.")
+        return False
+
+    subject = "Your Hawkscan Security Code"
+    html_content = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px; color: #1f2937; }}
+            .container {{ max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 30px; text-align: center; }}
+            h2 {{ color: #1f2937; margin-bottom: 20px; }}
+            p {{ font-size: 16px; line-height: 1.5; color: #4b5563; }}
+            .code-box {{ background: #f3f4f6; border-radius: 8px; padding: 20px; font-size: 32px; font-weight: 700; letter-spacing: 0.2em; color: #4f46e5; margin: 20px 0; }}
+            .footer {{ margin-top: 30px; color: #9ca3af; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Hawkscan Login Verification</h2>
+            <p>Please enter the following 6-digit code to access your account. This code expires in 10 minutes.</p>
+            <div class="code-box">{code}</div>
+            <div class="footer">If you didn't attempt to log in, please reset your password immediately.</div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    msg = MIMEMultipart('alternative')
+    msg['From'] = f"Hawkscan Security <{smtp_email}>"
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    
+    msg.attach(MIMEText(f"Your verification code is: {code}", 'plain'))
+    msg.attach(MIMEText(html_content, 'html'))
+    
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(smtp_email, smtp_password)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Failed to send OTP email: {e}")
+        return False

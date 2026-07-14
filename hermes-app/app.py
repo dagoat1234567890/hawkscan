@@ -247,9 +247,27 @@ def login():
         conn.close()
         
         if user and check_password_hash(user[1], password):
-            session['user_id'] = user[0]
-            session['is_admin'] = bool(user[2])
-            return redirect(url_for('dashboard'))
+            import secrets
+            from datetime import datetime, timedelta
+            from emailer import send_otp_email
+            
+            code = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+            expires = (datetime.utcnow() + timedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S')
+            
+            conn = sqlite3.connect(DATABASE)
+            c = conn.cursor()
+            c.execute("INSERT INTO otps (user_id, code, expires_at) VALUES (?, ?, ?)", (user[0], code, expires))
+            conn.commit()
+            conn.close()
+            
+            session['pending_user_id'] = user[0]
+            session['pending_is_admin'] = bool(user[2])
+            
+            success = send_otp_email(email, code)
+            if not success:
+                flash(f"DEV MODE: Your OTP code is {code}")
+            
+            return redirect(url_for('verify_otp'))
         else:
             flash("Invalid email or password.")
             return render_template('login.html')
@@ -285,8 +303,27 @@ def sign_up():
             # Fetch new user ID
             cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
             new_user = cursor.fetchone()
-            session['user_id'] = new_user[0]
-            return redirect(url_for('dashboard'))
+            import secrets
+            from datetime import datetime, timedelta
+            from emailer import send_otp_email
+            
+            code = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+            expires = (datetime.utcnow() + timedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S')
+            
+            conn = sqlite3.connect(DATABASE)
+            c = conn.cursor()
+            c.execute("INSERT INTO otps (user_id, code, expires_at) VALUES (?, ?, ?)", (new_user[0], code, expires))
+            conn.commit()
+            conn.close()
+            
+            session['pending_user_id'] = new_user[0]
+            session['pending_is_admin'] = False
+            
+            success = send_otp_email(email, code)
+            if not success:
+                flash(f"DEV MODE: Your OTP code is {code}")
+                
+            return redirect(url_for('verify_otp'))
         except Exception as e:
             flash(f"An error occurred: {e}")
         finally:
@@ -883,3 +920,37 @@ if __name__ == '__main__':
         app.run(debug=True, port=5000, use_reloader=False)
     finally:
         scheduler.shutdown()
+@app.route('/verify-otp', methods=['GET', 'POST'])
+def verify_otp():
+    if 'pending_user_id' not in session:
+        return redirect(url_for('login'))
+        
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        user_id = session['pending_user_id']
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Clean expired
+        cursor.execute("DELETE FROM otps WHERE expires_at < datetime('now')")
+        conn.commit()
+        
+        cursor.execute("SELECT id FROM otps WHERE user_id = ? AND code = ?", (user_id, code))
+        otp_record = cursor.fetchone()
+        
+        if otp_record:
+            cursor.execute("DELETE FROM otps WHERE id = ?", (otp_record[0],))
+            conn.commit()
+            conn.close()
+            
+            session['user_id'] = session.pop('pending_user_id')
+            session['is_admin'] = session.pop('pending_is_admin', False)
+            
+            return redirect(url_for('dashboard'))
+        else:
+            conn.close()
+            flash("Invalid or expired code.")
+            return render_template('verify_otp.html')
+            
+    return render_template('verify_otp.html')
