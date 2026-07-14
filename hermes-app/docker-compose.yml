@@ -17,3 +17,6 @@ services:
       - PYTHONUNBUFFERED=1
       # Pass through the Anthropic API key from your environment if needed
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Pass SMTP credentials for OTP and Password Resets
+      - SMTP_EMAIL=${SMTP_EMAIL}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
