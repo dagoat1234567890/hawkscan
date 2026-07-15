@@ -25,3 +25,12 @@ services:
       # Pass SMTP credentials for OTP and Password Resets
       - SMTP_EMAIL=${SMTP_EMAIL}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
+    networks:
+      - traefik
+      - default
+
+networks:
+  traefik:
+    external: true
+  default:
+    driver: bridge
