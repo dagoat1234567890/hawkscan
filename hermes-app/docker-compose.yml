@@ -5,26 +5,16 @@ services:
     build: .
     container_name: hawkscan-frontend
     restart: unless-stopped
+    network_mode: host
     volumes:
       # Mount the local users.db so that user data persists if the container restarts
       - ./users.db:/app/users.db
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      # HTTP Router (Port 80)
-      - "traefik.http.routers.hermes-http.rule=Host(`hawkscan.tech`) || Host(`www.hawkscan.tech`)"
-      - "traefik.http.routers.hermes-http.entrypoints=web"
-      - "traefik.http.routers.hermes-http.middlewares=hermes-https-redirect"
-      - "traefik.http.routers.hermes-http.service=hermes"
-      # HTTPS Redirect Middleware
-      - "traefik.http.middlewares.hermes-https-redirect.redirectscheme.scheme=https"
-      # HTTPS Router (Port 443)
-      - "traefik.http.routers.hermes-https.rule=Host(`hawkscan.tech`) || Host(`www.hawkscan.tech`)"
-      - "traefik.http.routers.hermes-https.entrypoints=websecure"
-      - "traefik.http.routers.hermes-https.tls=true"
-      - "traefik.http.routers.hermes-https.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.hermes-https.service=hermes"
-      # Service definition
+      - "traefik.http.routers.hermes.rule=Host(`hawkscan.tech`) || Host(`www.hawkscan.tech`)"
+      - "traefik.http.routers.hermes.entrypoints=web,websecure"
+      - "traefik.http.routers.hermes.tls=true"
+      - "traefik.http.routers.hermes.tls.certresolver=letsencrypt"
       - "traefik.http.services.hermes.loadbalancer.server.port=5000"
     environment:
       # Ensures Flask/Gunicorn outputs logs immediately
@@ -34,12 +24,3 @@ services:
       # Pass SMTP credentials for OTP and Password Resets
       - SMTP_EMAIL=${SMTP_EMAIL}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
-    networks:
-      - traefik
-      - default
-
-networks:
-  traefik:
-    external: true
-  default:
-    driver: bridge
