@@ -5,8 +5,6 @@ services:
     build: .
     container_name: hawkscan-dashboard
     restart: unless-stopped
-    ports:
-      - "5000:5000"
     volumes:
       # Mount the local users.db so that user data persists if the container restarts
       - ./users.db:/app/users.db
