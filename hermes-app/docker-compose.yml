@@ -15,6 +15,7 @@ services:
       - "traefik.http.routers.hermes-http.rule=Host(`hawkscan.tech`) || Host(`www.hawkscan.tech`)"
       - "traefik.http.routers.hermes-http.entrypoints=web"
       - "traefik.http.routers.hermes-http.middlewares=hermes-https-redirect"
+      - "traefik.http.routers.hermes-http.service=hermes"
       # HTTPS Redirect Middleware
       - "traefik.http.middlewares.hermes-https-redirect.redirectscheme.scheme=https"
       # HTTPS Router (Port 443)
@@ -22,6 +23,8 @@ services:
       - "traefik.http.routers.hermes-https.entrypoints=websecure"
       - "traefik.http.routers.hermes-https.tls=true"
       - "traefik.http.routers.hermes-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.hermes-https.service=hermes"
+      # Service definition
       - "traefik.http.services.hermes.loadbalancer.server.port=5000"
     environment:
       # Ensures Flask/Gunicorn outputs logs immediately
