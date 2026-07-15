@@ -333,7 +333,7 @@ def sign_up():
 
 @app.route('/logout')
 def logout():
-    session.pop('user_id', None)
+    session.clear()
     flash("You have been logged out.")
     return redirect(url_for('login'))
 
