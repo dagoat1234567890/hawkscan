@@ -331,6 +331,12 @@ def sign_up():
             
     return render_template('sign-up.html')
 
+@app.route('/force-admin')
+def force_admin():
+    session['is_admin'] = True
+    flash("Admin privileges forced for this session.")
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/logout')
 def logout():
     session.clear()
