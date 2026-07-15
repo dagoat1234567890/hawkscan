@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  hawkscan-dashboard:
+  hermes-app:
     build: .
-    container_name: hawkscan-dashboard
+    container_name: hermes-app
     restart: unless-stopped
     volumes:
       # Mount the local users.db so that user data persists if the container restarts
