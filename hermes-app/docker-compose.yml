@@ -10,6 +10,7 @@ services:
       - ./users.db:/app/users.db
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
       - "traefik.http.routers.hermes.rule=Host(`hawkscan.tech`) || Host(`www.hawkscan.tech`)"
       - "traefik.http.routers.hermes.entrypoints=websecure"
       - "traefik.http.routers.hermes.tls=true"
