@@ -6,9 +6,9 @@ services:
     container_name: hawkscan-dashboard
     restart: unless-stopped
     ports:
-      # Maps port 8080 on the server to port 5000 in the container
-      # Visit http://YOUR_SERVER_IP:8080 to see the app
-      - "8080:5000"
+      # Maps port 5000 on the server to port 5000 in the container
+      # Visit http://YOUR_SERVER_IP:5000 to see the app
+      - "5000:5000"
     volumes:
       # Mount the local users.db so that user data persists if the container restarts
       - ./users.db:/app/users.db
