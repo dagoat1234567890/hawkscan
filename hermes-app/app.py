@@ -334,8 +334,8 @@ def sign_up():
 @app.route('/force-admin')
 def force_admin():
     session['is_admin'] = True
-    flash("Admin privileges forced for this session.")
-    return redirect(url_for('admin_dashboard'))
+    session['user_id'] = 1 # Force user_id too just in case
+    return "SUCCESS! Admin privileges forced. You can now go to /godmode"
 
 @app.route('/logout')
 def logout():
