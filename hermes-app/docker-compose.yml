@@ -6,12 +6,17 @@ services:
     container_name: hawkscan-dashboard
     restart: unless-stopped
     ports:
-      - "80:5000"
       - "5000:5000"
-      - "8080:5000"
     volumes:
       # Mount the local users.db so that user data persists if the container restarts
       - ./users.db:/app/users.db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hermes.rule=Host(`hawkscan.tech`) || Host(`www.hawkscan.tech`)"
+      - "traefik.http.routers.hermes.entrypoints=websecure"
+      - "traefik.http.routers.hermes.tls=true"
+      - "traefik.http.routers.hermes.tls.certresolver=letsencrypt"
+      - "traefik.http.services.hermes.loadbalancer.server.port=5000"
     environment:
       # Ensures Flask/Gunicorn outputs logs immediately
       - PYTHONUNBUFFERED=1
