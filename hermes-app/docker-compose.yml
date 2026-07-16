@@ -24,3 +24,20 @@ services:
       # Pass SMTP credentials for OTP and Password Resets
       - SMTP_EMAIL=${SMTP_EMAIL}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+
+  hawkscan-worker:
+    build: .
+    container_name: hawkscan-worker
+    restart: unless-stopped
+    command: ["python", "scheduler.py"]
+    volumes:
+      # Mount the local users.db so it accesses the same database
+      - ./users.db:/app/users.db
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - SMTP_EMAIL=${SMTP_EMAIL}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}

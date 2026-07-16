@@ -1,5 +1,6 @@
 import sqlite3
 import time
+from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv()
 from emailer import send_price_drop_email
@@ -12,18 +13,37 @@ def run_analysis_job():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
+    current_hour = datetime.utcnow().hour
+    
+    # Determine which tiers to scan based on the current hour (UTC)
+    # Pro: only at 00:00 UTC
+    # Ultra: at 00:00, 08:00, 16:00 UTC
+    allowed_tiers = []
+    if current_hour == 0:
+        allowed_tiers = ['pro', 'ultra']
+    elif current_hour in [8, 16]:
+        allowed_tiers = ['ultra']
+        
+    if not allowed_tiers:
+        print(f"Hour {current_hour} UTC is not a scheduled scan time for any tier. Skipping.")
+        conn.close()
+        return
+
+    placeholders = ','.join(['?'] * len(allowed_tiers))
+    
     # Fetch all tracked products along with user emails
-    cursor.execute("""
+    query = f"""
         SELECT t.id, t.user_id, t.product_name, t.company_name, t.platform, 
                t.baseline_price, t.last_price, u.email, t.catalog_url 
         FROM trackers t
         JOIN users u ON t.user_id = u.id
-        WHERE t.is_active = 1
-    """)
+        WHERE t.is_active = 1 AND u.plan_tier IN ({placeholders})
+    """
+    cursor.execute(query, allowed_tiers)
     trackers = cursor.fetchall()
     
     if not trackers:
-        print("No products to track.")
+        print("No products to track for the current scheduled tiers.")
         conn.close()
         return
 
@@ -94,3 +114,14 @@ def run_analysis_job():
             
     conn.close()
     print("Finished Analysis Job.")
+
+if __name__ == "__main__":
+    from apscheduler.schedulers.blocking import BlockingScheduler
+    scheduler = BlockingScheduler()
+    # Run at the top of every hour
+    scheduler.add_job(func=run_analysis_job, trigger="cron", minute=0)
+    print("Starting background scheduler worker (BlockingScheduler)...")
+    try:
+        scheduler.start()
+    except (KeyboardInterrupt, SystemExit):
+        pass

@@ -10,7 +10,9 @@ from hermes import HawkscanAgent
 from scheduler import run_analysis_job
 
 load_dotenv()
+import stripe
 
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 DATABASE = "users.db"
 SCAN_TASKS = {}
 
@@ -24,7 +26,10 @@ def init_db():
             password TEXT NOT NULL,
             target_competitors TEXT,
             is_admin BOOLEAN DEFAULT 0,
-            total_tokens_used INTEGER DEFAULT 0
+            total_tokens_used INTEGER DEFAULT 0,
+            plan_tier TEXT DEFAULT 'free',
+            available_scans INTEGER DEFAULT 50,
+            chats_created INTEGER DEFAULT 0
         )
     """)
     cursor.execute("""
@@ -102,6 +107,21 @@ def init_db():
     except sqlite3.OperationalError:
         pass
         
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN plan_tier TEXT DEFAULT 'free'")
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN available_scans INTEGER DEFAULT 50")
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN chats_created INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -150,7 +170,17 @@ def landing():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('products.html')
+    user_id = session.get('user_id')
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT plan_tier, available_scans FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    plan_tier = row[0] if row else 'free'
+    available_scans = row[1] if row else 0
+    
+    return render_template('products.html', plan_tier=plan_tier.capitalize(), available_scans=available_scans)
 import secrets
 from datetime import datetime, timedelta
 
@@ -421,10 +451,14 @@ def api_analyze():
     tracker_id = row[0] if row else None
     catalog_url = row[1] if row else None
     
-    cursor.execute("SELECT target_competitors FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT target_competitors, available_scans FROM users WHERE id = ?", (user_id,))
     comp_row = cursor.fetchone()
     conn.close()
     
+    available_scans = comp_row[1] if comp_row else 0
+    if available_scans <= 0:
+        return jsonify({"error": "You are out of scans. Please upgrade your plan."}), 402
+        
     target_competitors = comp_row[0] if comp_row and comp_row[0] else None
 
     try:
@@ -487,7 +521,7 @@ def api_analyze():
     if tokens_used > 0:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ? WHERE id = ?", (tokens_used, user_id))
+        cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ?, available_scans = available_scans - 1 WHERE id = ?", (tokens_used, user_id))
         conn.commit()
         conn.close()
         
@@ -508,13 +542,18 @@ def background_scan(user_id):
 
     SCAN_TASKS[user_id] = {"status": "running", "total": len(trackers), "completed": 0}
     
-    cursor.execute("SELECT target_competitors FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT target_competitors, available_scans FROM users WHERE id = ?", (user_id,))
     comp_row = cursor.fetchone()
     target_competitors = comp_row[0] if comp_row and comp_row[0] else None
+    available_scans = comp_row[1] if comp_row else 0
     
     agent = HawkscanAgent()
     
     for tracker in trackers:
+        if available_scans <= 0:
+            SCAN_TASKS[user_id]["status"] = "completed"
+            break
+            
         t_id, product_name, company_name, platform, catalog_url = tracker
         
         # Add a small 1-second delay to prevent IP bans or rate limits
@@ -561,7 +600,8 @@ def background_scan(user_id):
                                   WHERE id = ?''', (my_price, t_id))
             
             if tokens_used > 0:
-                cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ? WHERE id = ?", (tokens_used, user_id))
+                cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ?, available_scans = available_scans - 1 WHERE id = ?", (tokens_used, user_id))
+                available_scans -= 1
                 
             conn.commit()
         except Exception as e:
@@ -630,10 +670,22 @@ def api_chat():
     cursor = conn.cursor()
     
     if not conversation_id:
+        # Check chat limits
+        cursor.execute("SELECT plan_tier, chats_created FROM users WHERE id = ?", (user_id,))
+        tier_row = cursor.fetchone()
+        if tier_row:
+            plan_tier, chats_created = tier_row
+            if plan_tier == 'free' and chats_created >= 2:
+                conn.close()
+                return jsonify({"error": "You have reached the limit of 2 chats on the Free tier. Please upgrade to Pro or Ultra."}), 402
+                
         # Create new conversation
         title = message[:30] + "..." if len(message) > 30 else message
         cursor.execute("INSERT INTO conversations (user_id, title) VALUES (?, ?)", (user_id, title))
         conversation_id = cursor.lastrowid
+        
+        # Increment chats_created
+        cursor.execute("UPDATE users SET chats_created = chats_created + 1 WHERE id = ?", (user_id,))
     
     # Fetch history
     cursor.execute("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY timestamp ASC", (conversation_id,))
@@ -702,6 +754,14 @@ def api_track():
     user_id = session['user_id']
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
+    
+    cursor.execute("SELECT plan_tier FROM users WHERE id = ?", (user_id,))
+    plan_tier = cursor.fetchone()[0]
+    
+    if plan_tier == 'free':
+        conn.close()
+        return jsonify({"error": "Background tracking is not available on the Free tier. Please upgrade to Pro or Ultra."}), 402
+        
     cursor.execute(
         "INSERT INTO trackers (user_id, product_name, company_name, platform, baseline_price, catalog_url) VALUES (?, ?, ?, ?, NULL, ?)",
         (user_id, product_name, company_name, platform, catalog_url)
@@ -803,6 +863,15 @@ def api_toggle_tracker(product_id):
         return jsonify({"error": "Tracker not found"}), 404
         
     new_status = 1 if row[0] == 0 else 0
+    
+    if new_status == 1:
+        cursor.execute("SELECT plan_tier FROM users WHERE id = ?", (user_id,))
+        plan_tier = cursor.fetchone()[0]
+        
+        if plan_tier == 'free':
+            conn.close()
+            return jsonify({"error": "Background tracking is not available on the Free tier. Please upgrade to Pro or Ultra."}), 402
+
     cursor.execute("UPDATE trackers SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (new_status, product_id))
     conn.commit()
     conn.close()
@@ -919,11 +988,80 @@ def api_admin_logs():
     conn.close()
     return jsonify({"logs": logs})
 
-if __name__ == '__main__':
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(func=run_analysis_job, trigger="interval", hours=1)
-    scheduler.start()
+@app.route('/api/create-checkout-session', methods=['POST'])
+@login_required_api
+def create_checkout_session():
+    data = request.json
+    tier = data.get('tier')
+    user_id = session['user_id']
     
+    if tier == 'pro':
+        price_in_cents = 100  # $1.00
+        scans = 100
+    elif tier == 'ultra':
+        price_in_cents = 200  # $2.00
+        scans = 1000
+    else:
+        return jsonify({"error": "Invalid tier"}), 400
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[
+                {
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': price_in_cents,
+                        'product_data': {
+                            'name': f'Hawkscan {tier.capitalize()} Tier ({scans} Scans)',
+                        },
+                    },
+                    'quantity': 1,
+                },
+            ],
+            mode='payment',
+            success_url=request.host_url + 'dashboard?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=request.host_url + 'pricing',
+            client_reference_id=str(user_id),
+            metadata={'tier': tier, 'scans': scans}
+        )
+        return jsonify({'url': checkout_session.url})
+    except Exception as e:
+        return jsonify(error=str(e)), 403
+
+@app.route('/api/stripe-webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+    endpoint_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
+    
+    event = None
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError as e:
+        return 'Invalid payload', 400
+    except stripe.error.SignatureVerificationError as e:
+        return 'Invalid signature', 400
+
+    if event['type'] == 'checkout.session.completed':
+        session_obj = event['data']['object']
+        user_id = session_obj.get('client_reference_id')
+        tier = session_obj.get('metadata', {}).get('tier')
+        scans_purchased = int(session_obj.get('metadata', {}).get('scans', 0))
+
+        if user_id and tier:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+            cursor.execute("UPDATE users SET plan_tier = ?, available_scans = available_scans + ? WHERE id = ?", (tier, scans_purchased, user_id))
+            conn.commit()
+            conn.close()
+            print(f"Upgraded user {user_id} to {tier} with {scans_purchased} scans.")
+
+    return jsonify(success=True)
+
+if __name__ == '__main__':
     try:
         app.run(debug=True, port=5000, use_reloader=False)
     finally:
