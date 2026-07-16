@@ -1035,6 +1035,10 @@ def stripe_webhook():
     sig_header = request.headers.get('Stripe-Signature')
     endpoint_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
     
+    if not endpoint_secret:
+        print("Webhook error: STRIPE_WEBHOOK_SECRET is not set in the environment.")
+        return 'Webhook secret not configured', 400
+
     event = None
     try:
         event = stripe.Webhook.construct_event(
