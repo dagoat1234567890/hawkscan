@@ -358,7 +358,7 @@ class HawkscanAgent:
             try:
                 print("Calling Anthropic...")
                 response = self.anthropic_client.messages.create(
-                    model="haiku-4-5",
+                    model="claude-3-5-haiku-latest",
                     max_tokens=max_tokens,
                     temperature=temperature,
                     messages=messages
@@ -886,7 +886,7 @@ class HawkscanAgent:
             # Max 3 tool execution turns to prevent infinite loops
             for _ in range(3):
                 response = self.anthropic_client.messages.create(
-                    model="haiku-4-5",
+                    model="claude-3-5-haiku-latest",
                     system=system_prompt,
                     max_tokens=2000,
                     temperature=0.1,
