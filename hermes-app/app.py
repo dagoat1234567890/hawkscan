@@ -1046,18 +1046,31 @@ def stripe_webhook():
         return 'Invalid signature', 400
 
     if event['type'] == 'checkout.session.completed':
-        session_obj = event['data']['object']
-        user_id = session_obj.get('client_reference_id')
-        tier = session_obj.get('metadata', {}).get('tier')
-        scans_purchased = int(session_obj.get('metadata', {}).get('scans', 0))
+        try:
+            session_obj = event['data']['object']
+            user_id = session_obj.get('client_reference_id')
+            metadata = session_obj.get('metadata') or {}
+            
+            tier = metadata.get('tier')
+            scans_purchased = metadata.get('scans', 0)
+            try:
+                scans_purchased = int(scans_purchased)
+            except (ValueError, TypeError):
+                scans_purchased = 0
 
-        if user_id and tier:
-            conn = sqlite3.connect(DATABASE)
-            cursor = conn.cursor()
-            cursor.execute("UPDATE users SET plan_tier = ?, available_scans = available_scans + ? WHERE id = ?", (tier, scans_purchased, user_id))
-            conn.commit()
-            conn.close()
-            print(f"Upgraded user {user_id} to {tier} with {scans_purchased} scans.")
+            if user_id and tier:
+                conn = sqlite3.connect(DATABASE)
+                cursor = conn.cursor()
+                cursor.execute("UPDATE users SET plan_tier = ?, available_scans = IFNULL(available_scans, 0) + ? WHERE id = ?", (tier, scans_purchased, user_id))
+                conn.commit()
+                conn.close()
+                print(f"Upgraded user {user_id} to {tier} with {scans_purchased} scans.")
+            else:
+                print(f"Webhook error: Missing user_id ({user_id}) or tier ({tier})")
+        except Exception as e:
+            print(f"Webhook processing error: {e}")
+            import traceback
+            traceback.print_exc()
 
     return jsonify(success=True)
 
