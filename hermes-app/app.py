@@ -882,10 +882,12 @@ def api_admin_stats():
 def api_admin_users():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    cursor.execute('''SELECT u.id, u.email, u.total_tokens_used, u.is_admin, COUNT(t.id) as trackers
-                      FROM users u LEFT JOIN trackers t ON u.id = t.user_id AND t.is_active = 1
-                      GROUP BY u.id''')
-    users = [{"id": row[0], "email": row[1], "tokens": row[2] or 0, "is_admin": bool(row[3]), "trackers": row[4]} for row in cursor.fetchall()]
+    cursor.execute('''SELECT u.id, u.email, u.is_admin, 
+                             (SELECT COUNT(*) FROM trackers WHERE user_id = u.id AND is_active = 1) as trackers,
+                             (SELECT SUM(scan_count) FROM trackers WHERE user_id = u.id) as total_scans
+                      FROM users u
+                      ORDER BY u.id DESC''')
+    users = [{"id": row[0], "email": row[1], "is_admin": bool(row[2]), "trackers": row[3], "scans": row[4] or 0} for row in cursor.fetchall()]
     conn.close()
     return jsonify({"users": users})
 

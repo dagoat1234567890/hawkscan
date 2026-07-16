@@ -149,7 +149,7 @@
                         <th>Email</th>
                         <th>Role</th>
                         <th>Active Trackers</th>
-                        <th>Tokens Consumed</th>
+                        <th>Scans Executed</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -198,7 +198,7 @@
                         <td>${u.email}</td>
                         <td>${u.is_admin ? '<span style="color:#fbbf24;font-weight:600;">Admin</span>' : 'User'}</td>
                         <td>${u.trackers}</td>
-                        <td style="font-family: monospace;">${u.tokens.toLocaleString()}</td>
+                        <td style="font-family: monospace;">${u.scans.toLocaleString()}</td>
                         <td>
                             <button class="action-btn btn-danger" onclick="deleteUser(${u.id}, '${u.email}')">Delete</button>
                         </td>
