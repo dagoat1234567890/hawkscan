@@ -996,10 +996,10 @@ def create_checkout_session():
     user_id = session['user_id']
     
     if tier == 'pro':
-        price_in_cents = 100  # $1.00
+        price_in_cents = 1000  # $10.00
         scans = 100
     elif tier == 'ultra':
-        price_in_cents = 200  # $2.00
+        price_in_cents = 5000  # $50.00
         scans = 1000
     else:
         return jsonify({"error": "Invalid tier"}), 400
