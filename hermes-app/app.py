@@ -1053,11 +1053,11 @@ def stripe_webhook():
     if event['type'] == 'checkout.session.completed':
         try:
             session_obj = event['data']['object']
-            user_id = session_obj.get('client_reference_id')
-            metadata = session_obj.get('metadata') or {}
+            user_id = getattr(session_obj, 'client_reference_id', None)
+            metadata = getattr(session_obj, 'metadata', {})
             
-            tier = metadata.get('tier')
-            scans_purchased = metadata.get('scans', 0)
+            tier = metadata.get('tier') if metadata else None
+            scans_purchased = metadata.get('scans', 0) if metadata else 0
             try:
                 scans_purchased = int(scans_purchased)
             except (ValueError, TypeError):
