@@ -336,9 +336,9 @@ class HawkscanAgent:
                     url_suffix = item.get("url", "")
                     
                     if title and url_suffix:
+                        url_suffix = url_suffix.lstrip("/")
                         if "/p/" not in url_suffix:
-                            sku = item.get("sku", "")
-                            if not sku: sku = item.get("sku_config", "")
+                            sku = item.get("sku", "") or item.get("sku_config", "") or item.get("skuCode", "") or item.get("SKU", "")
                             if sku:
                                 url_suffix = f"{url_suffix}/{sku}/p/"
                                 
