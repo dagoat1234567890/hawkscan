@@ -143,12 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     url = 'https://' + url;
                 }
                 
-                if (type === 'high' || type === 'low') {
-                    const seller = type === 'high' ? (product.last_market_high_seller || 'A competitor') : (product.last_market_low_seller || 'A competitor');
-                    const realTitle = type === 'high' ? (product.last_market_high_title || product.product_name) : (product.last_market_low_title || product.product_name);
-                    return `<a href="javascript:void(0)" onclick="window.showSellerNotification('${type === 'high' ? 'Market Highest' : 'Market Lowest'}', '${realTitle.replace(/'/g, "\\'")}', '${priceText}', '${seller.replace(/'/g, "\\'")}')" class="price-link" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 2px;" title="View Seller Info" onmouseover="this.style.borderBottom='1px solid var(--accent-primary)'" onmouseout="this.style.borderBottom='1px dashed rgba(255,255,255,0.3)'">${priceText}</a>`;
-                }
-                
                 return `<a href="${url}" target="_blank" class="price-link" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 2px;" title="View on ${product.platform}" onmouseover="this.style.borderBottom='1px solid var(--accent-primary)'" onmouseout="this.style.borderBottom='1px dashed rgba(255,255,255,0.3)'">${priceText}</a>`;
             };
 
@@ -517,36 +511,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial load
     loadProducts();
-
-    // Custom Notification Logic
-    const sellerNotification = document.getElementById('seller-notification');
-    const closeNotificationBtn = document.getElementById('close-notification-btn');
-    
-    if (closeNotificationBtn && sellerNotification) {
-        closeNotificationBtn.addEventListener('click', () => {
-            sellerNotification.style.transform = 'translateY(100%)';
-            setTimeout(() => {
-                sellerNotification.style.display = 'none';
-            }, 300);
-        });
-    }
-
-    window.showSellerNotification = (title, productName, priceText, sellerName) => {
-        if (!sellerNotification) return;
-        
-        document.getElementById('notification-title').innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            ${title}
-        `;
-        document.getElementById('notification-product').textContent = productName;
-        document.getElementById('notification-price').textContent = priceText;
-        document.getElementById('notification-seller').textContent = sellerName;
-        
-        // Show and animate in
-        sellerNotification.style.display = 'block';
-        // Small delay to allow display:block to apply before animating transform
-        setTimeout(() => {
-            sellerNotification.style.transform = 'translateY(0)';
-        }, 10);
-    };
 });

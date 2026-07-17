@@ -783,6 +783,24 @@ def api_conversation_messages(conversation_id):
     conn.close()
     return jsonify([{"role": m[0], "content": m[1], "timestamp": m[2]} for m in messages])
 
+@app.route('/api/conversations/<int:conversation_id>', methods=['DELETE'])
+@login_required_api
+def api_delete_conversation(conversation_id):
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    # Verify owner
+    cursor.execute("SELECT id FROM conversations WHERE id = ? AND user_id = ?", (conversation_id, user_id))
+    if not cursor.fetchone():
+        conn.close()
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    cursor.execute("DELETE FROM messages WHERE conversation_id = ?", (conversation_id,))
+    cursor.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
 @app.route('/api/track', methods=['POST'])
 @login_required_api
 def api_track():
