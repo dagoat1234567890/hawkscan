@@ -173,13 +173,17 @@ def dashboard():
     user_id = session.get('user_id')
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    cursor.execute("SELECT plan_tier, available_scans FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT plan_tier, available_scans, is_admin FROM users WHERE id = ?", (user_id,))
     row = cursor.fetchone()
     conn.close()
     
     plan_tier = row[0] if row else 'free'
     available_scans = row[1] if row else 0
+    is_admin = row[2] if row else False
     
+    if is_admin:
+        available_scans = "Unlimited"
+
     return render_template('products.html', plan_tier=plan_tier.capitalize(), available_scans=available_scans)
 import secrets
 from datetime import datetime, timedelta
@@ -451,12 +455,13 @@ def api_analyze():
     tracker_id = row[0] if row else None
     catalog_url = row[1] if row else None
     
-    cursor.execute("SELECT target_competitors, available_scans FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT target_competitors, available_scans, is_admin FROM users WHERE id = ?", (user_id,))
     comp_row = cursor.fetchone()
     conn.close()
     
     available_scans = comp_row[1] if comp_row else 0
-    if available_scans <= 0:
+    is_admin = comp_row[2] if comp_row else False
+    if available_scans <= 0 and not is_admin:
         return jsonify({"error": "You are out of scans. Please upgrade your plan."}), 402
         
     target_competitors = comp_row[0] if comp_row and comp_row[0] else None
@@ -521,7 +526,10 @@ def api_analyze():
     if tokens_used > 0:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ?, available_scans = available_scans - 1 WHERE id = ?", (tokens_used, user_id))
+        if is_admin:
+            cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ? WHERE id = ?", (tokens_used, user_id))
+        else:
+            cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ?, available_scans = available_scans - 1 WHERE id = ?", (tokens_used, user_id))
         conn.commit()
         conn.close()
         
@@ -542,15 +550,16 @@ def background_scan(user_id):
 
     SCAN_TASKS[user_id] = {"status": "running", "total": len(trackers), "completed": 0}
     
-    cursor.execute("SELECT target_competitors, available_scans FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT target_competitors, available_scans, is_admin FROM users WHERE id = ?", (user_id,))
     comp_row = cursor.fetchone()
     target_competitors = comp_row[0] if comp_row and comp_row[0] else None
     available_scans = comp_row[1] if comp_row else 0
+    is_admin = comp_row[2] if comp_row else False
     
     agent = HawkscanAgent()
     
     for tracker in trackers:
-        if available_scans <= 0:
+        if available_scans <= 0 and not is_admin:
             SCAN_TASKS[user_id]["status"] = "completed"
             break
             
@@ -600,8 +609,11 @@ def background_scan(user_id):
                                   WHERE id = ?''', (my_price, t_id))
             
             if tokens_used > 0:
-                cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ?, available_scans = available_scans - 1 WHERE id = ?", (tokens_used, user_id))
-                available_scans -= 1
+                if is_admin:
+                    cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ? WHERE id = ?", (tokens_used, user_id))
+                else:
+                    cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ?, available_scans = available_scans - 1 WHERE id = ?", (tokens_used, user_id))
+                    available_scans -= 1
                 
             conn.commit()
         except Exception as e:

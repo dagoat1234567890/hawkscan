@@ -37,7 +37,7 @@ def run_analysis_job():
                t.baseline_price, t.last_price, u.email, t.catalog_url 
         FROM trackers t
         JOIN users u ON t.user_id = u.id
-        WHERE t.is_active = 1 AND u.plan_tier IN ({placeholders})
+        WHERE t.is_active = 1 AND (u.plan_tier IN ({placeholders}) OR u.is_admin = 1)
     """
     cursor.execute(query, allowed_tiers)
     trackers = cursor.fetchall()
