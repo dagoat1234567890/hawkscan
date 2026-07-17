@@ -336,6 +336,12 @@ class HawkscanAgent:
                     url_suffix = item.get("url", "")
                     
                     if title and url_suffix:
+                        if "/p/" not in url_suffix:
+                            sku = item.get("sku", "")
+                            if not sku: sku = item.get("sku_config", "")
+                            if sku:
+                                url_suffix = f"{url_suffix}/{sku}/p/"
+                                
                         href = f"https://www.noon.com/uae-en/{url_suffix}"
                         store_name = item.get("store_name") or item.get("store_code") or brand or "Unknown Seller"
                         results.append({
