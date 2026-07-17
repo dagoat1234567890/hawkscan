@@ -96,6 +96,16 @@ def init_db():
         cursor.execute("ALTER TABLE trackers ADD COLUMN last_market_low_url TEXT")
     except sqlite3.OperationalError:
         pass
+        
+    try:
+        cursor.execute("ALTER TABLE trackers ADD COLUMN last_market_high_seller TEXT")
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        cursor.execute("ALTER TABLE trackers ADD COLUMN last_market_low_seller TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     try:
         cursor.execute("ALTER TABLE scan_history ADD COLUMN market_high_url TEXT")
@@ -502,6 +512,8 @@ def api_analyze():
         low = stats.get('min')
         min_url = stats.get('min_url')
         max_url = stats.get('max_url')
+        min_seller = stats.get('min_seller')
+        max_seller = stats.get('max_seller')
         
         # Insert into scan_history
         cursor.execute('''INSERT INTO scan_history (tracker_id, my_price, market_avg, market_high, market_low, market_high_url, market_low_url) 
@@ -512,8 +524,9 @@ def api_analyze():
             cursor.execute('''UPDATE trackers 
                               SET last_price = ?, last_market_avg = ?, last_market_high = ?, last_market_low = ?, 
                                   last_market_high_url = ?, last_market_low_url = ?,
+                                  last_market_high_seller = ?, last_market_low_seller = ?,
                                   scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
-                              WHERE id = ?''', (my_price, avg, high, low, max_url, min_url, tracker_id))
+                              WHERE id = ?''', (my_price, avg, high, low, max_url, min_url, max_seller, min_seller, tracker_id))
         else:
             # Just update scan count and timestamp if error
             cursor.execute('''UPDATE trackers 
@@ -593,6 +606,8 @@ def background_scan(user_id):
             market_low = safe_float(stats.get("min"))
             min_url = stats.get('min_url')
             max_url = stats.get('max_url')
+            min_seller = stats.get('min_seller')
+            max_seller = stats.get('max_seller')
             
             cursor.execute('''INSERT INTO scan_history (tracker_id, my_price, market_avg, market_high, market_low, market_high_url, market_low_url) 
                               VALUES (?, ?, ?, ?, ?, ?, ?)''', (t_id, my_price, market_avg, market_high, market_low, max_url, min_url))
@@ -601,8 +616,9 @@ def background_scan(user_id):
                 cursor.execute('''UPDATE trackers 
                                   SET last_price = ?, last_market_avg = ?, last_market_high = ?, last_market_low = ?, 
                                       last_market_high_url = ?, last_market_low_url = ?,
+                                      last_market_high_seller = ?, last_market_low_seller = ?,
                                       scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
-                                  WHERE id = ?''', (my_price, market_avg, market_high, market_low, max_url, min_url, t_id))
+                                  WHERE id = ?''', (my_price, market_avg, market_high, market_low, max_url, min_url, max_seller, min_seller, t_id))
             else:
                 cursor.execute('''UPDATE trackers 
                                   SET last_price = ?, scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
@@ -808,14 +824,15 @@ def api_trackers():
     user_id = session['user_id']
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, product_name, company_name, platform, baseline_price, last_price, updated_at, is_active, catalog_url, last_market_avg, last_market_high, last_market_low, scan_count, last_market_high_url, last_market_low_url FROM trackers WHERE user_id = ?", (user_id,))
+    cursor.execute("SELECT id, product_name, company_name, platform, baseline_price, last_price, updated_at, is_active, catalog_url, last_market_avg, last_market_high, last_market_low, scan_count, last_market_high_url, last_market_low_url, last_market_high_seller, last_market_low_seller FROM trackers WHERE user_id = ?", (user_id,))
     trackers = cursor.fetchall()
     conn.close()
     return jsonify([{
         "id": t[0], "product_name": t[1], "company_name": t[2], 
         "platform": t[3], "baseline_price": t[4], "last_price": t[5], "updated_at": t[6], "is_active": bool(t[7]), "catalog_url": t[8],
         "last_market_avg": t[9], "last_market_high": t[10], "last_market_low": t[11], "scan_count": t[12],
-        "last_market_high_url": t[13], "last_market_low_url": t[14]
+        "last_market_high_url": t[13], "last_market_low_url": t[14],
+        "last_market_high_seller": t[15], "last_market_low_seller": t[16]
     } for t in trackers])
 
 @app.route('/api/history/<int:tracker_id>', methods=['GET'])
