@@ -494,7 +494,8 @@ class HawkscanAgent:
                 {{
                     "url": "https://...",
                     "price": 1020.00,
-                    "seller": "Competitor Name" // MUST NOT be '{company_name}' or any variation of it.
+                    "seller": "Competitor Name", // MUST NOT be '{company_name}' or any variation of it.
+                    "title": "Exact product title on listing"
                 }}
             ]
         }}
@@ -690,8 +691,8 @@ class HawkscanAgent:
         {{
             "my_price": 1050.00,
             "competitors": [
-                {{"url": "https://{platform_domain}/example-product", "price": 1020.50, "seller": "Competitor A"}},
-                {{"url": "https://{platform_domain}/example-product-2", "price": 1045.00, "seller": "Competitor B"}}
+                {{"url": "https://{platform_domain}/example-product", "price": 1020.50, "seller": "Competitor A", "title": "Apple iPhone 15 Pro Max 256GB"}},
+                {{"url": "https://{platform_domain}/example-product-2", "price": 1045.00, "seller": "Competitor B", "title": "iPhone 15 Pro Max (256GB) - Blue Titanium"}}
             ]
         }}
         """
@@ -774,6 +775,8 @@ class HawkscanAgent:
         max_url = next((c.get("url") for c in competitors if c.get("price") == max_price), None)
         min_seller = next((c.get("seller") for c in competitors if c.get("price") == min_price), "A competitor")
         max_seller = next((c.get("seller") for c in competitors if c.get("price") == max_price), "A competitor")
+        min_title = next((c.get("title") for c in competitors if c.get("price") == min_price), "Product Name")
+        max_title = next((c.get("title") for c in competitors if c.get("price") == max_price), "Product Name")
         
         return {
             "platform": platform_source,
@@ -785,9 +788,11 @@ class HawkscanAgent:
                 "min": min_price,
                 "min_url": min_url,
                 "min_seller": min_seller,
+                "min_title": min_title,
                 "max": max_price,
                 "max_url": max_url,
                 "max_seller": max_seller,
+                "max_title": max_title,
                 "avg": round(avg_price, 2)
             }
         }
