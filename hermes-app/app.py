@@ -1031,6 +1031,7 @@ def create_checkout_session():
 
 @app.route('/api/stripe-webhook', methods=['POST'])
 def stripe_webhook():
+    print(">>> WEBHOOK ENDPOINT HIT BY STRIPE <<<")
     payload = request.data
     sig_header = request.headers.get('Stripe-Signature')
     endpoint_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
