@@ -130,11 +130,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const makePriceLink = (priceText, type = null) => {
                 let url = getSearchUrl();
-                if (type === 'baseline' && product.catalog_url) {
+                if (type === 'baseline' && product.catalog_url && product.catalog_url !== 'N/A') {
                     url = product.catalog_url;
-                } else if (type === 'high' && product.last_market_high_url) {
+                } else if (type === 'high' && product.last_market_high_url && product.last_market_high_url !== 'N/A') {
                     url = product.last_market_high_url;
-                } else if (type === 'low' && product.last_market_low_url) {
+                } else if (type === 'low' && product.last_market_low_url && product.last_market_low_url !== 'N/A') {
                     url = product.last_market_low_url;
                 }
                 
