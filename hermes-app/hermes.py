@@ -679,11 +679,8 @@ class HawkscanAgent:
 """
         
         prompt += """
-        6. EXTRACTING PRICES: Output the extracted data as a pure, minified JSON array of objects. 
+        6. EXTRACTING PRICES: Output the extracted data exactly matching the JSON Schema below.
            - **CRITICAL: PRESERVE CENTS/DECIMALS!** If a price appears as 'AED 397 . 02' or '397.02', you MUST extract `397.02`. Do NOT round to `397.0`. Always keep the exact decimal value.
-           Format exactly like this:
-           [{"title": "Competitor Product Title", "price": 450.99, "url": "URL if available"}]
-           Ensure the JSON is perfectly formatted. Do NOT include markdown blocks like ```json. Just output the array.
         """
         prompt += f"""
         Format the output EXACTLY as JSON. If no valid competitor is found (e.g., you are the sole seller), return an empty list for competitors. DO NOT include markdown formatting. DO NOT include explanation text or reasoning. ONLY output valid JSON.        
