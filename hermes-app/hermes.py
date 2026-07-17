@@ -337,7 +337,7 @@ class HawkscanAgent:
                     
                     if title and url_suffix:
                         href = f"https://www.noon.com/uae-en/{url_suffix}"
-                        store_name = item.get("store_name", "")
+                        store_name = item.get("store_name") or item.get("store_code") or brand or "Unknown Seller"
                         results.append({
                             "title": title,
                             "url": href,
@@ -770,10 +770,11 @@ class HawkscanAgent:
             conclusion = f"Your price is in the middle of the pack. Average is AED {avg_price:.2f}."        
         min_url = next((c.get("url") for c in competitors if c.get("price") == min_price), None)
         max_url = next((c.get("url") for c in competitors if c.get("price") == max_price), None)
-        min_seller = next((c.get("seller") for c in competitors if c.get("price") == min_price), "A competitor")
-        max_seller = next((c.get("seller") for c in competitors if c.get("price") == max_price), "A competitor")
-        min_title = next((c.get("title") for c in competitors if c.get("price") == min_price), "Product Name")
-        max_title = next((c.get("title") for c in competitors if c.get("price") == max_price), "Product Name")
+        
+        min_seller = next((c.get("seller") for c in competitors if c.get("price") == min_price and c.get("seller")), "Unknown Seller")
+        max_seller = next((c.get("seller") for c in competitors if c.get("price") == max_price and c.get("seller")), "Unknown Seller")
+        min_title = next((c.get("title") for c in competitors if c.get("price") == min_price and c.get("title")), "Unknown Title")
+        max_title = next((c.get("title") for c in competitors if c.get("price") == max_price and c.get("title")), "Unknown Title")
         
         return {
             "platform": platform_source,
