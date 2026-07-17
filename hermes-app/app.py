@@ -1056,8 +1056,8 @@ def stripe_webhook():
             user_id = getattr(session_obj, 'client_reference_id', None)
             metadata = getattr(session_obj, 'metadata', {})
             
-            tier = metadata.get('tier') if metadata else None
-            scans_purchased = metadata.get('scans', 0) if metadata else 0
+            tier = getattr(metadata, 'tier', None) if metadata else None
+            scans_purchased = getattr(metadata, 'scans', 0) if metadata else 0
             try:
                 scans_purchased = int(scans_purchased)
             except (ValueError, TypeError):
