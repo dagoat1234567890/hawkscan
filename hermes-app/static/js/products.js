@@ -137,6 +137,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (type === 'low' && product.last_market_low_url) {
                     url = product.last_market_low_url;
                 }
+                
+                // Ensure the URL is absolute
+                if (url && url !== '#' && !url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'https://' + url;
+                }
+                
                 return `<a href="${url}" target="_blank" class="price-link" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 2px;" title="View on ${product.platform}" onmouseover="this.style.borderBottom='1px solid var(--accent-primary)'" onmouseout="this.style.borderBottom='1px dashed rgba(255,255,255,0.3)'">${priceText}</a>`;
             };
 
