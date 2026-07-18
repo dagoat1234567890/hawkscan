@@ -833,10 +833,12 @@ def api_track():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
-    cursor.execute("SELECT plan_tier FROM users WHERE id = ?", (user_id,))
-    plan_tier = cursor.fetchone()[0]
+    cursor.execute("SELECT plan_tier, is_admin FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    plan_tier = row[0] if row else 'free'
+    is_admin = row[1] if row else False
     
-    if plan_tier == 'free':
+    if plan_tier == 'free' and not is_admin:
         conn.close()
         return jsonify({"error": "Background tracking is not available on the Free tier. Please upgrade to Pro or Ultra."}), 402
         
@@ -945,10 +947,12 @@ def api_toggle_tracker(product_id):
     new_status = 1 if row[0] == 0 else 0
     
     if new_status == 1:
-        cursor.execute("SELECT plan_tier FROM users WHERE id = ?", (user_id,))
-        plan_tier = cursor.fetchone()[0]
+        cursor.execute("SELECT plan_tier, is_admin FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        plan_tier = row[0] if row else 'free'
+        is_admin = row[1] if row else False
         
-        if plan_tier == 'free':
+        if plan_tier == 'free' and not is_admin:
             conn.close()
             return jsonify({"error": "Background tracking is not available on the Free tier. Please upgrade to Pro or Ultra."}), 402
 
