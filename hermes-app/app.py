@@ -555,6 +555,10 @@ def api_analyze():
                               SET scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
                               WHERE id = ?''', (tracker_id,))
         
+        if results.get("my_url") and not catalog_url:
+            cursor.execute("UPDATE trackers SET catalog_url = ? WHERE id = ?", (results.get("my_url"), tracker_id))
+            results['catalog_url'] = results.get("my_url")
+
         conn.commit()
         conn.close()
         
@@ -648,6 +652,9 @@ def background_scan(user_id):
                 cursor.execute('''UPDATE trackers 
                                   SET last_price = ?, scan_count = scan_count + 1, updated_at = CURRENT_TIMESTAMP 
                                   WHERE id = ?''', (my_price, t_id))
+            
+            if results.get("my_url") and not catalog_url:
+                cursor.execute("UPDATE trackers SET catalog_url = ? WHERE id = ?", (results.get("my_url"), t_id))
             
             if tokens_used > 0:
                 if is_admin:

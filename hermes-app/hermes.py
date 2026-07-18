@@ -697,6 +697,7 @@ class HawkscanAgent:
         JSON Schema:
         {{
             "my_price": 1050.00,
+            "my_url": "https://{platform_domain}/our-product-url",
             "competitors": [
                 {{"url": "https://{platform_domain}/example-product", "price": 1020.50, "seller": "Competitor A", "title": "Apple iPhone 15 Pro Max 256GB"}},
                 {{"url": "https://{platform_domain}/example-product-2", "price": 1045.00, "seller": "Competitor B", "title": "iPhone 15 Pro Max (256GB) - Blue Titanium"}}
@@ -709,10 +710,11 @@ class HawkscanAgent:
             raw_json, tokens_used = self._call_anthropic(messages, max_tokens=4000)
             data = self._parse_json_response(raw_json)
             my_price = data.get("my_price")
+            my_url = data.get("my_url")
             competitors = data.get("competitors", [])
             
             # If it's a fallback run, add warning to conclusion
-            result = self._compute_market_position(product_name, my_price, competitors, f"Hawkscan Scraper ({platform_source_label})")
+            result = self._compute_market_position(product_name, my_price, competitors, f"Hawkscan Scraper ({platform_source_label})", my_url)
             result['tokens_used'] = tokens_used
             if is_fallback:
                 result["conclusion"] = f"⚠️ Could not find exact product on {original_platform}. Showing reference prices from Amazon.ae instead: " + result["conclusion"]
@@ -729,7 +731,7 @@ class HawkscanAgent:
         except Exception as e:
             return self._error_response(f"Price analysis failed: {str(e)}")
 
-    def _compute_market_position(self, product_name, my_price, competitors, platform_source):
+    def _compute_market_position(self, product_name, my_price, competitors, platform_source, my_url=None):
         valid_prices = [c["price"] for c in competitors if isinstance(c.get("price"), (int, float))]
         
         if not valid_prices:
@@ -789,6 +791,7 @@ class HawkscanAgent:
         return {
             "platform": platform_source,
             "my_price": my_price,
+            "my_url": my_url,
             "competitors": competitors,
             "conclusion": conclusion,
             "position": position,
