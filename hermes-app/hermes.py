@@ -282,9 +282,9 @@ class HawkscanAgent:
         for i in range(3):
             try:
                 if hasattr(curl_requests, "impersonate"):
-                    res = curl_requests.get(url, impersonate=profiles[i], timeout=4)
+                    res = curl_requests.get(url, impersonate=profiles[i], timeout=10)
                 else:
-                    res = curl_requests.get(url, timeout=4)
+                    res = curl_requests.get(url, timeout=10)
                 if res and res.status_code == 200:
                     break
             except Exception:
@@ -318,9 +318,9 @@ class HawkscanAgent:
             for i in range(3):
                 try:
                     if hasattr(curl_requests, "impersonate"):
-                        res = curl_requests.get(url, impersonate=profiles[i], timeout=4)
+                        res = curl_requests.get(url, impersonate=profiles[i], timeout=10)
                     else:
-                        res = curl_requests.get(url, timeout=4)
+                        res = curl_requests.get(url, timeout=10)
                     if res and res.status_code == 200:
                         break
                 except Exception as e:
@@ -342,7 +342,11 @@ class HawkscanAgent:
                             if sku:
                                 url_suffix = f"{url_suffix}/{sku}/p/"
                                 
-                        href = f"https://www.noon.com/uae-en/{url_suffix}"
+                        
+                        if url_suffix.startswith("uae-en/") or url_suffix.startswith("egypt-en/") or url_suffix.startswith("saudi-en/"):
+                            href = f"https://www.noon.com/{url_suffix}"
+                        else:
+                            href = f"https://www.noon.com/uae-en/{url_suffix}"
                         store_name = item.get("store_name") or item.get("store_code") or brand or "Unknown Seller"
                         results.append({
                             "title": title,
