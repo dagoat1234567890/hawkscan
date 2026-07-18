@@ -281,16 +281,10 @@ class HawkscanAgent:
         res = None
         for i in range(3):
             try:
-                headers = {
-                    "User-Agent": "Mozilla/5.0",
-                    "x-locale": "en-ae",
-                    "x-content-language": "en-ae",
-                    "x-platform": "web"
-                }
                 if hasattr(curl_requests, "impersonate"):
-                    res = curl_requests.get(url, headers=headers, impersonate=profiles[i], timeout=4)
+                    res = curl_requests.get(url, impersonate=profiles[i], timeout=4)
                 else:
-                    res = curl_requests.get(url, headers=headers, timeout=4)
+                    res = curl_requests.get(url, timeout=4)
                 if res and res.status_code == 200:
                     break
             except Exception:
@@ -323,16 +317,10 @@ class HawkscanAgent:
             
             for i in range(3):
                 try:
-                    headers = {
-                        "User-Agent": "Mozilla/5.0",
-                        "x-locale": "en-ae",
-                        "x-content-language": "en-ae",
-                        "x-platform": "web"
-                    }
                     if hasattr(curl_requests, "impersonate"):
-                        res = curl_requests.get(url, headers=headers, impersonate=profiles[i], timeout=4)
+                        res = curl_requests.get(url, impersonate=profiles[i], timeout=4)
                     else:
-                        res = curl_requests.get(url, headers=headers, timeout=4)
+                        res = curl_requests.get(url, timeout=4)
                     if res and res.status_code == 200:
                         break
                 except Exception as e:
