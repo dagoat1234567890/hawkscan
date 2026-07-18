@@ -315,8 +315,8 @@
                 <li>No 24/7 Analysis</li>
                 <li>Community Support</li>
             </ul>
-            <button class="btn-checkout" onclick="window.location.href='/'" {% if plan_tier == 'free' %}disabled{% endif %}>
-                {% if plan_tier == 'free' %}Current Plan{% else %}Downgrade{% endif %}
+            <button class="btn-checkout" onclick="window.location.href='/'" disabled>
+                {% if plan_tier == 'free' %}Current Plan{% else %}Included in Plan{% endif %}
             </button>
         </div>
 
