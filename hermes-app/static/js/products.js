@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                         History
                     </button>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;" onclick="event.stopPropagation();">
+                    <div class="toggle-wrapper" style="display: flex; align-items: center; gap: 0.5rem;" onclick="event.stopPropagation();">
                         <label class="toggle-switch">
                             <input type="checkbox" onchange="window.toggleAnalysis(${product.id}, this)" ${product.is_active ? 'checked' : ''}>
                             <span class="toggle-slider"></span>
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             
             if (res.ok) {
-                const label = checkbox.closest('.toggle-container').querySelector('.toggle-label');
+                const label = checkbox.closest('.toggle-wrapper').querySelector('.toggle-label');
                 const text = label.querySelector('.toggle-text');
                 
                 if (data.is_active) {
@@ -341,11 +341,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     platform: platform
                 })
             });
-            
             if (res.ok) {
                 await loadProducts();
             } else {
-                alert('Failed to scan product');
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.error || 'Failed to scan product');
             }
         } catch (error) {
             console.error('Error scanning product:', error);

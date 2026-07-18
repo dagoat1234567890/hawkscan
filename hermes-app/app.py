@@ -511,6 +511,7 @@ def api_analyze():
         cursor.execute("INSERT INTO error_logs (user_id, error_message, endpoint) VALUES (?, ?, ?)", (user_id, error_msg, "/api/analyze"))
         conn.commit()
         conn.close()
+        return jsonify({"error": error_msg}), 500
 
     results['catalog_url'] = catalog_url
     

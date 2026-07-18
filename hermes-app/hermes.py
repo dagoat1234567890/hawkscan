@@ -807,12 +807,14 @@ class HawkscanAgent:
 
     def _error_response(self, message):
         return {
+            "error": True,
+            "message": message,
             "platform": "Error",
             "my_price": "Error",
             "competitors": [],
             "conclusion": message,
             "position": "Error",
-            "stats": {"min": None, "max": None, "avg": None}
+            "stats": {"min": None, "max": None, "avg": None, "min_url": None, "max_url": None, "min_seller": None, "max_seller": None, "min_title": None, "max_title": None}
         }
 
     def chat(self, message, history=None, user_id=None):
