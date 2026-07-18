@@ -222,6 +222,7 @@
                 <a href="{{ url_for('dashboard') }}" class="active">Products</a>
                 <a href="{{ url_for('history') }}">Global History</a>
                 <a href="{{ url_for('chat_view') }}">Agent AI</a>
+                <a href="/pricing">Pricing</a>
                 <a href="/settings">Settings</a>
                 <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
             </div>
@@ -233,11 +234,11 @@
             <div>
                 <h1 style="font-family: 'Outfit', sans-serif; font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-primary);">Your Products</h1>
                 <p class="text-secondary">Manage and monitor all your products across platforms in real-time.</p>
-                <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                <div style="display: flex; gap: 0.75rem; margin-top: 1rem; align-items: center;">
                     <span style="background: rgba(99, 102, 241, 0.1); color: var(--accent-primary); padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600; font-size: 0.85rem;">Plan: {{ plan_tier }}</span>
                     <span style="background: rgba(16, 185, 129, 0.1); color: #059669; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600; font-size: 0.85rem;">Available Scans: {{ available_scans }}</span>
-                    {% if plan_tier == 'Free' %}
-                    <a href="/pricing" style="background: var(--accent-primary); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600; font-size: 0.85rem; text-decoration: none;">Upgrade to Pro</a>
+                    {% if plan_tier != 'ultra' %}
+                        <a href="/pricing" style="background: rgba(255, 255, 255, 0.05); color: var(--text-primary); padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600; font-size: 0.85rem; text-decoration: none; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s;">Upgrade Plan</a>
                     {% endif %}
                 </div>
             </div>

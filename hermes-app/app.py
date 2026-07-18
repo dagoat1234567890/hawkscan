@@ -400,7 +400,15 @@ def logout():
 @app.route('/pricing')
 @login_required
 def pricing():
-    return render_template('pricing.html')
+    user_id = session['user_id']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT plan_tier FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    plan_tier = row[0] if row else 'free'
+    return render_template('pricing.html', plan_tier=plan_tier)
 
 @app.route('/empty')
 @login_required
@@ -1060,10 +1068,10 @@ def create_checkout_session():
     user_id = session['user_id']
     
     if tier == 'pro':
-        price_in_cents = 1000  # $10.00
+        price_in_cents = 100  # $1.00
         scans = 100
     elif tier == 'ultra':
-        price_in_cents = 5000  # $50.00
+        price_in_cents = 200  # $2.00
         scans = 1000
     else:
         return jsonify({"error": "Invalid tier"}), 400

@@ -6,51 +6,56 @@
     <meta name="description" content="Pricing - Hawkscan">
     <title>Pricing - Hawkscan</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         .pricing-container {
-            display: flex;
-            justify-content: center;
-            align-items: stretch;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 4rem auto;
             padding: 0 2rem;
-            flex-wrap: wrap;
         }
 
         .pricing-panel {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
-            padding: 3rem 2rem;
+            padding: 3rem 2.5rem;
             width: 100%;
-            max-width: 350px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             text-align: left;
             position: relative;
             display: flex;
             flex-direction: column;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
 
         .pricing-panel:hover {
             transform: translateY(-5px);
-            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .pricing-panel.pro {
-            border: 2px solid var(--accent-primary, #2a3fd6);
+            border: 2px solid var(--accent-primary);
             transform: scale(1.05);
+            background: linear-gradient(180deg, rgba(91, 83, 237, 0.05) 0%, rgba(15, 23, 42, 0.6) 100%);
         }
 
         .pricing-panel.pro:hover {
             transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 20px 50px rgba(91, 83, 237, 0.2);
         }
 
         .pricing-panel.ultra {
-            border: 2px solid #8b5cf6;
+            border: 2px solid var(--accent-secondary);
+            background: linear-gradient(180deg, rgba(240, 56, 139, 0.05) 0%, rgba(15, 23, 42, 0.6) 100%);
+        }
+
+        .pricing-panel.ultra:hover {
+            box-shadow: 0 20px 50px rgba(240, 56, 139, 0.2);
         }
 
         .pro-badge {
@@ -58,7 +63,7 @@
             top: -15px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--accent-primary, #2a3fd6);
+            background: var(--accent-primary);
             color: white;
             padding: 0.5rem 1.5rem;
             border-radius: 20px;
@@ -66,6 +71,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(91, 83, 237, 0.4);
         }
 
         .ultra-badge {
@@ -73,7 +79,7 @@
             top: -15px;
             left: 50%;
             transform: translateX(-50%);
-            background: #8b5cf6;
+            background: var(--accent-secondary);
             color: white;
             padding: 0.5rem 1.5rem;
             border-radius: 20px;
@@ -81,126 +87,226 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(240, 56, 139, 0.4);
         }
 
         .plan-name {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-primary, #111);
+            font-size: 1.8rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
 
         .plan-desc {
-            color: var(--text-secondary, #666);
+            color: var(--text-secondary);
             font-size: 0.95rem;
             margin-bottom: 2rem;
             min-height: 40px;
+            line-height: 1.5;
         }
 
         .plan-price {
-            font-size: 3rem;
+            font-size: 3.5rem;
             font-weight: 800;
-            color: var(--text-primary, #111);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-primary);
             margin-bottom: 2rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.25rem;
         }
 
         .plan-price span {
             font-size: 1rem;
-            color: var(--text-secondary, #666);
+            color: var(--text-secondary);
             font-weight: 500;
+            font-family: 'Inter', sans-serif;
         }
 
         .features-list {
             list-style: none;
             padding: 0;
-            margin: 0 0 2rem 0;
+            margin: 0 0 2.5rem 0;
             flex-grow: 1;
         }
 
         .features-list li {
-            padding: 0.75rem 0;
-            color: var(--text-secondary, #666);
+            padding: 0.85rem 0;
+            color: var(--text-secondary);
             font-size: 0.95rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
         }
 
         .features-list li::before {
             content: '✓';
-            color: var(--accent-primary, #2a3fd6);
+            color: #10b981;
             font-weight: 800;
-        }
-
-        .pricing-panel.ultra .features-list li::before {
-            color: #8b5cf6;
+            background: rgba(16, 185, 129, 0.1);
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.75rem;
         }
 
         .btn-checkout {
-            background: var(--bg-secondary, #f4f4f5);
-            color: var(--text-primary, #111);
-            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+            border: 1px solid rgba(255,255,255,0.1);
             width: 100%;
             padding: 1rem;
             border-radius: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
             margin-top: auto;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
         }
 
-        .btn-checkout:hover {
-            background: rgba(0,0,0,0.05);
+        .btn-checkout:hover:not(:disabled) {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn-checkout:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: transparent;
+            border-color: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
         }
 
         .pro .btn-checkout {
-            background: var(--accent-primary, #2a3fd6);
-            color: white;
+            background: var(--accent-primary);
             border: none;
+            color: white;
         }
 
-        .pro .btn-checkout:hover {
-            background: #1e30b5; 
+        .pro .btn-checkout:hover:not(:disabled) {
+            background: #4740d4;
+            box-shadow: 0 5px 15px rgba(91, 83, 237, 0.3);
         }
 
         .ultra .btn-checkout {
-            background: #8b5cf6;
-            color: white;
+            background: var(--accent-secondary);
             border: none;
+            color: white;
         }
 
-        .ultra .btn-checkout:hover {
-            background: #7c3aed; 
+        .ultra .btn-checkout:hover:not(:disabled) {
+            background: #d62d78;
+            box-shadow: 0 5px 15px rgba(240, 56, 139, 0.3);
+        }
+
+        .navbar {
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-primary);
+        }
+
+        .current-plan-badge {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            vertical-align: middle;
+        }
+        
+        .header-container {
+            text-align: center;
+            margin-top: 5rem;
+            padding: 0 2rem;
+        }
+        
+        .header-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
     </style>
 </head>
-<body>
-    <div class="bg-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-    </div>
+<body data-theme="dark">
+    <!-- Abstract background elements -->
+    <div style="position: fixed; top: -10%; left: -10%; width: 50%; height: 50%; background: radial-gradient(circle, rgba(91, 83, 237, 0.15) 0%, transparent 70%); border-radius: 50%; z-index: -1; filter: blur(60px);"></div>
+    <div style="position: fixed; bottom: -10%; right: -10%; width: 50%; height: 50%; background: radial-gradient(circle, rgba(240, 56, 139, 0.1) 0%, transparent 70%); border-radius: 50%; z-index: -1; filter: blur(60px);"></div>
 
-    <nav>
-        <a href="/" class="logo">Hawkscan.</a>
-        <div class="nav-links">
-            <a href="/">Dashboard</a>
-            <a href="/pricing" class="active">Pricing</a>
-            <a href="/chat">Chat</a>
-            <a href="/settings">Settings</a>
-            <a href="/logout">Logout</a>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="/" class="logo">Hawkscan</a>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}">Products</a>
+                <a href="{{ url_for('history') }}">Global History</a>
+                <a href="{{ url_for('chat_view') }}">Agent AI</a>
+                <a href="/pricing" class="active">Pricing</a>
+                <a href="/settings">Settings</a>
+                <a href="{{ url_for('logout') }}" style="color: #ef4444;">Logout</a>
+            </div>
         </div>
     </nav>
 
-    <div style="text-align: center; margin-top: 4rem; padding: 0 2rem;">
-        <h1 style="font-size: 3rem; margin-bottom: 1rem; color: var(--text-primary, #111);">Simple, transparent pricing</h1>
-        <p style="font-size: 1.1rem; color: var(--text-secondary, #666);">Scale your competitive intelligence with Hawkscan.</p>
+    <div class="header-container">
+        <h1 class="header-title">Simple, transparent pricing</h1>
+        <p style="font-size: 1.15rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto; line-height: 1.6;">Scale your competitive intelligence with Hawkscan. Choose the plan that fits your business needs.</p>
     </div>
 
     <div class="pricing-container">
         <!-- FREE TIER -->
         <div class="pricing-panel">
-            <h2 class="plan-name">Free</h2>
+            <h2 class="plan-name">Free {% if plan_tier == 'free' %}<span class="current-plan-badge">Current</span>{% endif %}</h2>
             <p class="plan-desc">For individuals testing the waters.</p>
             <div class="plan-price">$0 <span>/ forever</span></div>
             <ul class="features-list">
@@ -209,42 +315,53 @@
                 <li>No 24/7 Analysis</li>
                 <li>Community Support</li>
             </ul>
-            <button class="btn-checkout" onclick="window.location.href='/'">Current Plan</button>
+            <button class="btn-checkout" onclick="window.location.href='/'" {% if plan_tier == 'free' %}disabled{% endif %}>
+                {% if plan_tier == 'free' %}Current Plan{% else %}Downgrade{% endif %}
+            </button>
         </div>
 
         <!-- PRO TIER -->
         <div class="pricing-panel pro">
             <div class="pro-badge">Most Popular</div>
-            <h2 class="plan-name">Pro</h2>
+            <h2 class="plan-name">Pro {% if plan_tier == 'pro' %}<span class="current-plan-badge">Current</span>{% endif %}</h2>
             <p class="plan-desc">For professionals needing active monitoring.</p>
-            <div class="plan-price">$10 <span>/ one-time</span></div>
+            <div class="plan-price">$1 <span>/ one-time</span></div>
             <ul class="features-list">
                 <li>100 One-off Scans</li>
                 <li>Unlimited Chat Consultations</li>
                 <li>Unlimited Trackers (Scans 1x daily)</li>
                 <li>Priority Email Support</li>
             </ul>
-            <button class="btn-checkout" onclick="checkout('pro')">Upgrade to Pro</button>
+            <button class="btn-checkout" onclick="checkout('pro')" {% if plan_tier == 'pro' or plan_tier == 'ultra' %}disabled{% endif %}>
+                {% if plan_tier == 'pro' %}Current Plan{% elif plan_tier == 'ultra' %}Included in Ultra{% else %}Upgrade to Pro{% endif %}
+            </button>
         </div>
 
         <!-- ULTRA TIER -->
         <div class="pricing-panel ultra">
             <div class="ultra-badge">Maximum Power</div>
-            <h2 class="plan-name">Ultra</h2>
+            <h2 class="plan-name">Ultra {% if plan_tier == 'ultra' %}<span class="current-plan-badge">Current</span>{% endif %}</h2>
             <p class="plan-desc">For businesses that demand real-time data.</p>
-            <div class="plan-price">$50 <span>/ one-time</span></div>
+            <div class="plan-price">$2 <span>/ one-time</span></div>
             <ul class="features-list">
                 <li>1000 One-off Scans</li>
                 <li>Unlimited Chat Consultations</li>
                 <li>Unlimited Trackers (Scans 3x daily)</li>
                 <li>Dedicated 24/7 Support</li>
             </ul>
-            <button class="btn-checkout" onclick="checkout('ultra')">Upgrade to Ultra</button>
+            <button class="btn-checkout" onclick="checkout('ultra')" {% if plan_tier == 'ultra' %}disabled{% endif %}>
+                {% if plan_tier == 'ultra' %}Current Plan{% else %}Upgrade to Ultra{% endif %}
+            </button>
         </div>
     </div>
 
     <script>
         async function checkout(tier) {
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = 'Processing...';
+            btn.disabled = true;
+            
             try {
                 const response = await fetch('/api/create-checkout-session', {
                     method: 'POST',
@@ -258,10 +375,14 @@
                     window.location.href = data.url;
                 } else {
                     alert('Error creating checkout session: ' + data.error);
+                    btn.innerText = originalText;
+                    btn.disabled = false;
                 }
             } catch (err) {
                 console.error(err);
                 alert('An error occurred while connecting to Stripe.');
+                btn.innerText = originalText;
+                btn.disabled = false;
             }
         }
     </script>
