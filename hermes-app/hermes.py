@@ -357,7 +357,7 @@ class HawkscanAgent:
             print(f"Direct Noon API search error: {e}")
         return results
 
-    def _call_anthropic(self, messages, max_tokens=2000, temperature=0.1):
+    def _call_anthropic(self, messages, max_tokens=4000, temperature=0.1):
         """Sends a request to Anthropic API using Claude 3.5 Sonnet."""
         import time
         if not self.anthropic_client:
@@ -706,7 +706,7 @@ class HawkscanAgent:
         
         try:
             messages = [{"role": "user", "content": prompt}]
-            raw_json, tokens_used = self._call_anthropic(messages, max_tokens=2000)
+            raw_json, tokens_used = self._call_anthropic(messages, max_tokens=4000)
             data = self._parse_json_response(raw_json)
             my_price = data.get("my_price")
             competitors = data.get("competitors", [])
