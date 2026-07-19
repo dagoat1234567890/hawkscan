@@ -28,7 +28,7 @@ def init_db():
             is_admin BOOLEAN DEFAULT 0,
             total_tokens_used INTEGER DEFAULT 0,
             plan_tier TEXT DEFAULT 'free',
-            available_scans INTEGER DEFAULT 50,
+            available_scans INTEGER DEFAULT 10,
             chats_created INTEGER DEFAULT 0
         )
     """)
@@ -82,6 +82,18 @@ def init_db():
             last_price REAL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_active BOOLEAN DEFAULT 1,
+            catalog_url TEXT,
+            last_market_avg REAL,
+            last_market_high REAL,
+            last_market_low REAL,
+            scan_count INTEGER DEFAULT 0,
+            last_market_high_url TEXT,
+            last_market_low_url TEXT,
+            last_market_high_seller TEXT,
+            last_market_low_seller TEXT,
+            last_market_high_title TEXT,
+            last_market_low_title TEXT,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     """)
@@ -133,7 +145,7 @@ def init_db():
         pass
         
     try:
-        cursor.execute("ALTER TABLE users ADD COLUMN available_scans INTEGER DEFAULT 50")
+        cursor.execute("ALTER TABLE users ADD COLUMN available_scans INTEGER DEFAULT 10")
     except sqlite3.OperationalError:
         pass
         
