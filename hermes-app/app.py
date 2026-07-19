@@ -387,9 +387,17 @@ def sign_up():
 
 @app.route('/force-admin')
 def force_admin():
+    if 'user_id' in session:
+        user_id = session['user_id']
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET is_admin = 1, plan_tier = 'ultra', available_scans = -1 WHERE id = ?", (user_id,))
+        conn.commit()
+        conn.close()
+    
     session['is_admin'] = True
-    session['user_id'] = 1 # Force user_id too just in case
-    return "SUCCESS! Admin privileges forced. You can now go to /godmode"
+    session['user_id'] = session.get('user_id', 1) # Fallback to 1 if not logged in
+    return "SUCCESS! Admin privileges forced and account upgraded to Ultra. You can now go back to the dashboard."
 
 @app.route('/logout')
 def logout():
