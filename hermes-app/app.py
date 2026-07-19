@@ -1087,10 +1087,10 @@ def create_checkout_session():
     user_id = session['user_id']
     
     if tier == 'pro':
-        price_in_cents = 100  # $1.00
+        price_in_dirhams = 55  
         scans = 100
     elif tier == 'ultra':
-        price_in_cents = 200  # $2.00
+        price_in_dirhams = 183  
         scans = 1000
     else:
         return jsonify({"error": "Invalid tier"}), 400
@@ -1101,8 +1101,8 @@ def create_checkout_session():
             line_items=[
                 {
                     'price_data': {
-                        'currency': 'usd',
-                        'unit_amount': price_in_cents,
+                        'currency': 'aed',
+                        'unit_amount': price_in_dirhams * 100, # Stripe expects smallest unit (fils)
                         'product_data': {
                             'name': f'Hawkscan {tier.capitalize()} Tier ({scans} Scans)',
                         },
