@@ -846,13 +846,12 @@ def api_track():
     plan_tier = row[0] if row else 'free'
     is_admin = row[1] if row else False
     
-    if plan_tier == 'free' and not is_admin:
-        conn.close()
-        return jsonify({"error": "Background tracking is not available on the Free tier. Please upgrade to Pro or Ultra."}), 402
+    # Free users can add products, but background tracking is disabled by default
+    initial_active_state = 0 if (plan_tier == 'free' and not is_admin) else 1
         
     cursor.execute(
-        "INSERT INTO trackers (user_id, product_name, company_name, platform, baseline_price, catalog_url) VALUES (?, ?, ?, ?, NULL, ?)",
-        (user_id, product_name, company_name, platform, catalog_url)
+        "INSERT INTO trackers (user_id, product_name, company_name, platform, baseline_price, catalog_url, is_active) VALUES (?, ?, ?, ?, NULL, ?, ?)",
+        (user_id, product_name, company_name, platform, catalog_url, initial_active_state)
     )
     conn.commit()
     conn.close()
