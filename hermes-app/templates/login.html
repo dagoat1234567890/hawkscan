@@ -40,14 +40,14 @@
             <form action="/login" method="POST">
                 <div class="input-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                    <input type="email" id="email" name="email" placeholder="Enter Your Email Address" required>
                 </div>
                 <div class="input-group">
                     <div style="display: flex; justify-content: space-between;">
                         <label for="password">Password</label>
                         <a href="{{ url_for('forgot_password') }}" style="font-size: 0.85rem; color: var(--accent-primary); text-decoration: none;">Forgot Password?</a>
                     </div>
-                    <input type="password" id="password" name="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required>
+                    <input type="password" id="password" name="password" placeholder="Enter Your Password" required>
                 </div>
                 <button type="submit">Sign In</button>
             </form>
