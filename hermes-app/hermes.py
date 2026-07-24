@@ -820,6 +820,43 @@ class HawkscanAgent:
             "stats": {"min": None, "max": None, "avg": None, "min_url": None, "max_url": None, "min_seller": None, "max_seller": None, "min_title": None, "max_title": None}
         }
 
+    def generate_seo_analysis(self, product_name, platform, current_price, target_competitors=None):
+        """Generates an AI SEO Analysis for the given product on the given platform."""
+        if not self.anthropic_client:
+            return "# SEO Analysis Unavailable\n\nAnthropic API key is not configured."
+            
+        system_prompt = f"""
+You are an expert E-commerce SEO Specialist. Your task is to provide a highly actionable, accurate, and detailed SEO analysis for a seller's product on {platform}.
+
+Follow these strict best practices:
+For Amazon: Focus on the A10 Algorithm, emphasize structuring titles as (Brand + Product Type + Key Features + Attributes). Emphasize 5 benefit-led bullet points with scannable anchors, A+ content for descriptions, pure white backgrounds for images, and careful use of backend keywords without stuffing.
+For Noon: Focus on Catalogue Quality. Titles should be concise (Brand + Model + Specs + USP). Emphasize filling out all backend attributes (brand, color, size, material) accurately, using keyword reports from Seller Lab. Emphasize using FBN (Fulfilled by Noon) as it massively impacts SEO, and require high-resolution photos on white backgrounds.
+
+Format your response in Markdown with clear headings (e.g., Title Optimization, Bullet Points, Image Strategy, Backend Keywords) and actionable examples.
+"""
+        user_message = f"""
+Please analyze and provide SEO tips for my product:
+- Product Name: {product_name}
+- Platform: {platform}
+- My Price: AED {current_price if current_price else 'Not provided'}
+- Competitors/Keywords Context: {target_competitors if target_competitors else 'None provided'}
+"""
+        try:
+            response = self.anthropic_client.messages.create(
+                model="claude-3-5-sonnet-20240620",
+                max_tokens=2000,
+                temperature=0.7,
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": user_message}
+                ]
+            )
+            return response.content[0].text
+        except Exception as e:
+            print(f"Error generating SEO analysis: {e}")
+            return f"# SEO Analysis Error\n\nThere was an error generating the report: {str(e)}"
+
+
     def chat(self, message, history=None, user_id=None):
         system_prompt = """
         You are Hawkscan, an AI agent for a competitive price-analysis and ecommerce web application. 

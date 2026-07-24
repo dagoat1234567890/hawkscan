@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Analysis | Hawkscan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .seo-container {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+        }
+        @media (max-width: 900px) {
+            .seo-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--glass-shadow);
+            height: fit-content;
+        }
+        .results-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--glass-shadow);
+            min-height: 500px;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(255, 0, 85, 0.1);
+        }
+        .btn-analyze {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px var(--accent-primary);
+        }
+        .btn-analyze:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .markdown-body p, .markdown-body li {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .markdown-body ul, .markdown-body ol {
+            padding-left: 2rem;
+            margin-bottom: 1rem;
+        }
+        .markdown-body strong {
+            color: var(--text-primary);
+        }
+        .divider {
+            text-align: center;
+            margin: 2rem 0;
+            position: relative;
+        }
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+        .divider span {
+            position: relative;
+            z-index: 2;
+            background: var(--glass-bg);
+            padding: 0 1rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .loader {
+            display: none;
+            width: 48px;
+            height: 48px;
+            border: 5px solid var(--border-color);
+            border-bottom-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 3rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo">Hawkscan</div>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}">Products</a>
+                <a href="{{ url_for('seo_analysis') }}" class="active">SEO Analysis</a>
+                <a href="{{ url_for('history') }}">Global History</a>
+                <a href="{{ url_for('chat_view') }}">Agent AI</a>
+                <a href="/pricing">Pricing</a>
+                <a href="/settings">Settings</a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="seo-container">
+        <!-- Input Section -->
+        <div class="form-section animate-fade-in-left">
+            <h2 style="font-family: 'Outfit', sans-serif; color: var(--text-primary); margin-bottom: 1.5rem;">New Analysis</h2>
+            
+            <div class="form-group">
+                <label>Select Tracked Product</label>
+                <select class="form-control" id="tracked-select" onchange="handleProductSelect()">
+                    <option value="">-- Select a product --</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}" data-name="{{ product.name }}" data-platform="{{ product.platform }}" data-price="{{ product.price }}">
+                        {{ product.name[:35] }}... ({{ product.platform }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="divider"><span>OR ANALYZE NEW</span></div>
+
+            <form id="seo-form">
+                <input type="hidden" id="product_id" name="product_id">
+                
+                <div class="form-group">
+                    <label>Product Name</label>
+                    <input type="text" id="product_name" name="product_name" class="form-control" placeholder="e.g. Samsung Galaxy S24" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="platform" name="platform" class="form-control" required>
+                        <option value="Amazon">Amazon.ae</option>
+                        <option value="Noon">Noon</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Current Price (AED) - Optional</label>
+                    <input type="number" step="0.01" id="current_price" name="current_price" class="form-control" placeholder="0.00">
+                </div>
+
+                <button type="submit" class="btn-analyze" id="analyze-btn">Generate SEO Report</button>
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section animate-fade-in-right delay-100">
+            <div id="welcome-state" style="text-align: center; margin-top: 4rem;">
+                <h1 style="font-family: 'Outfit', sans-serif; font-size: 2.5rem; background: linear-gradient(135deg, var(--text-primary), var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI SEO Optimizer</h1>
+                <p class="text-secondary" style="margin-top: 1rem; font-size: 1.1rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+                    Leverage advanced AI and platform-specific algorithms (Amazon A10 & Noon Catalogue Quality) to perfectly optimize your product listings and skyrocket your organic ranking.
+                </p>
+            </div>
+            
+            <div class="loader" id="loader"></div>
+            
+            <div id="results-content" class="markdown-body" style="display: none;">
+                <!-- Markdown results injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleProductSelect() {
+            const select = document.getElementById('tracked-select');
+            const selected = select.options[select.selectedIndex];
+            
+            const nameInput = document.getElementById('product_name');
+            const platformInput = document.getElementById('platform');
+            const priceInput = document.getElementById('current_price');
+            const idInput = document.getElementById('product_id');
+
+            if (select.value) {
+                nameInput.value = selected.dataset.name;
+                platformInput.value = selected.dataset.platform;
+                priceInput.value = selected.dataset.price !== 'None' ? selected.dataset.price : '';
+                idInput.value = select.value;
+            } else {
+                nameInput.value = '';
+                platformInput.value = 'Amazon';
+                priceInput.value = '';
+                idInput.value = '';
+            }
+        }
+
+        document.getElementById('seo-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('analyze-btn');
+            const welcome = document.getElementById('welcome-state');
+            const loader = document.getElementById('loader');
+            const results = document.getElementById('results-content');
+            
+            const data = {
+                product_id: document.getElementById('product_id').value,
+                product_name: document.getElementById('product_name').value,
+                platform: document.getElementById('platform').value,
+                current_price: document.getElementById('current_price').value
+            };
+
+            btn.disabled = true;
+            btn.textContent = 'Analyzing SEO...';
+            welcome.style.display = 'none';
+            results.style.display = 'none';
+            loader.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/analyze-seo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    results.innerHTML = marked.parse(result.analysis);
+                    results.style.display = 'block';
+                } else {
+                    results.innerHTML = `<h3 style="color: #ef4444;">Error</h3><p>${result.error || 'Something went wrong'}</p>`;
+                    results.style.display = 'block';
+                }
+            } catch (error) {
+                results.innerHTML = `<h3 style="color: #ef4444;">Error</h3><p>${error.message}</p>`;
+                results.style.display = 'block';
+            } finally {
+                loader.style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = 'Generate SEO Report';
+            }
+        });
+    </script>
+</body>
+</html>
