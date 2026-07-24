@@ -108,8 +108,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         emptyState.style.display = 'none';
         tbody.innerHTML = '';
-        data.forEach(product => {
+        
+        data.forEach((product, index) => {
             const row = document.createElement('tr');
+            
+            // Add staggered animation classes to each row
+            row.className = 'animate-fade-in-up hover-lift';
+            
+            // Calculate delay up to 500ms max for staggered entrance
+            const delayClass = index < 5 ? `delay-${(index + 1) * 100}` : '';
+            if (delayClass) row.classList.add(delayClass);
             
             // Format prices
             const currentPrice = product.last_price || product.baseline_price;
