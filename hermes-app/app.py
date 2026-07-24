@@ -441,11 +441,11 @@ def seo_analysis():
     user_id = session['user_id']
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, product_name, platform, last_price FROM trackers WHERE user_id = ? AND is_active = 1", (user_id,))
+    cursor.execute("SELECT id, product_name, company_name, platform, last_price FROM trackers WHERE user_id = ? AND is_active = 1", (user_id,))
     trackers = cursor.fetchall()
     conn.close()
     
-    products = [{"id": row[0], "name": row[1], "platform": row[2], "price": row[3]} for row in trackers]
+    products = [{"id": row[0], "name": row[1], "company": row[2], "platform": row[3], "price": row[4]} for row in trackers]
     return render_template('seo.html', products=products)
 
 @app.route('/api/analyze-seo', methods=['POST'])
@@ -455,6 +455,7 @@ def api_analyze_seo():
     data = request.json
     
     product_name = data.get('product_name')
+    company_name = data.get('company_name')
     platform = data.get('platform')
     current_price = data.get('current_price')
     product_id = data.get('product_id') # If selected from existing
@@ -463,12 +464,12 @@ def api_analyze_seo():
     cursor = conn.cursor()
     
     if product_id:
-        cursor.execute("SELECT product_name, platform, last_price FROM trackers WHERE id = ? AND user_id = ?", (product_id, user_id))
+        cursor.execute("SELECT product_name, company_name, platform, last_price FROM trackers WHERE id = ? AND user_id = ?", (product_id, user_id))
         row = cursor.fetchone()
         if not row:
             conn.close()
             return jsonify({"error": "Product not found"}), 404
-        product_name, platform, current_price = row[0], row[1], row[2]
+        product_name, company_name, platform, current_price = row[0], row[1], row[2], row[3]
         
     cursor.execute("SELECT target_competitors FROM users WHERE id = ?", (user_id,))
     user_row = cursor.fetchone()
@@ -481,6 +482,7 @@ def api_analyze_seo():
     # Generate the analysis
     analysis = agent.generate_seo_analysis(
         product_name=product_name,
+        company_name=company_name,
         platform=platform,
         current_price=current_price,
         target_competitors=target_competitors

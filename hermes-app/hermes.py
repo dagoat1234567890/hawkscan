@@ -820,7 +820,7 @@ class HawkscanAgent:
             "stats": {"min": None, "max": None, "avg": None, "min_url": None, "max_url": None, "min_seller": None, "max_seller": None, "min_title": None, "max_title": None}
         }
 
-    def generate_seo_analysis(self, product_name, platform, current_price, target_competitors=None):
+    def generate_seo_analysis(self, product_name, company_name, platform, current_price, target_competitors=None):
         """Generates an AI SEO Analysis for the given product on the given platform."""
         if not self.anthropic_client:
             return "# SEO Analysis Unavailable\n\nAnthropic API key is not configured."
@@ -837,6 +837,7 @@ Format your response in Markdown with clear headings (e.g., Title Optimization, 
         user_message = f"""
 Please analyze and provide SEO tips for my product:
 - Product Name: {product_name}
+- Brand/Company Name: {company_name if company_name else 'Not provided'}
 - Platform: {platform}
 - My Price: AED {current_price if current_price else 'Not provided'}
 - Competitors/Keywords Context: {target_competitors if target_competitors else 'None provided'}

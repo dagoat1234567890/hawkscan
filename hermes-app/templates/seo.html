@@ -173,7 +173,7 @@
                 <select class="form-control" id="tracked-select" onchange="handleProductSelect()">
                     <option value="">-- Select a product --</option>
                     {% for product in products %}
-                    <option value="{{ product.id }}" data-name="{{ product.name }}" data-platform="{{ product.platform }}" data-price="{{ product.price }}">
+                    <option value="{{ product.id }}" data-name="{{ product.name }}" data-company="{{ product.company }}" data-platform="{{ product.platform }}" data-price="{{ product.price }}">
                         {{ product.name[:35] }}... ({{ product.platform }})
                     </option>
                     {% endfor %}
@@ -188,6 +188,11 @@
                 <div class="form-group">
                     <label>Product Name</label>
                     <input type="text" id="product_name" name="product_name" class="form-control" placeholder="e.g. Samsung Galaxy S24" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Brand / Company Name</label>
+                    <input type="text" id="company_name" name="company_name" class="form-control" placeholder="e.g. Samsung">
                 </div>
                 
                 <div class="form-group">
@@ -230,17 +235,20 @@
             const selected = select.options[select.selectedIndex];
             
             const nameInput = document.getElementById('product_name');
+            const companyInput = document.getElementById('company_name');
             const platformInput = document.getElementById('platform');
             const priceInput = document.getElementById('current_price');
             const idInput = document.getElementById('product_id');
 
             if (select.value) {
                 nameInput.value = selected.dataset.name;
+                companyInput.value = selected.dataset.company !== 'None' ? selected.dataset.company : '';
                 platformInput.value = selected.dataset.platform;
                 priceInput.value = selected.dataset.price !== 'None' ? selected.dataset.price : '';
                 idInput.value = select.value;
             } else {
                 nameInput.value = '';
+                companyInput.value = '';
                 platformInput.value = 'Amazon';
                 priceInput.value = '';
                 idInput.value = '';
@@ -258,6 +266,7 @@
             const data = {
                 product_id: document.getElementById('product_id').value,
                 product_name: document.getElementById('product_name').value,
+                company_name: document.getElementById('company_name').value,
                 platform: document.getElementById('platform').value,
                 current_price: document.getElementById('current_price').value
             };
