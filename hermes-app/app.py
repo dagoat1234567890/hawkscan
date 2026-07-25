@@ -792,9 +792,9 @@ def api_chat():
         tier_row = cursor.fetchone()
         if tier_row:
             plan_tier, chats_created = tier_row
-            if plan_tier == 'free' and chats_created >= 2:
+            if plan_tier == 'free' and chats_created >= 10:
                 conn.close()
-                return jsonify({"error": "You have reached the limit of 2 chats on the Free tier. Please upgrade to Pro or Ultra."}), 402
+                return jsonify({"error": "You have reached the limit of 10 chats on the Free tier. Please upgrade to Pro or Ultra."}), 402
                 
         # Create new conversation
         title = message[:30] + "..." if len(message) > 30 else message
