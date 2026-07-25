@@ -517,7 +517,7 @@ class HawkscanAgent:
             prompt += f"\n[Listing {i+1}]\nURL: {listing['url']}\nText Snippet: {listing['snippet'][:1500]}\n"
             
         try:
-            raw_response, tokens_used = self._call_anthropic([{"role": "user", "content": prompt}], max_tokens=1500, temperature=0.1)
+            raw_response, tokens_used = self._call_anthropic([{"role": "user", "content": prompt}], max_tokens=4000, temperature=0.1)
             data = self._parse_json_response(raw_response)
             
             if not data:
