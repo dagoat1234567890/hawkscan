@@ -313,30 +313,12 @@ def login():
         conn.close()
         
         if user and check_password_hash(user[1], password):
-            import secrets
-            from datetime import datetime, timedelta
-            from emailer import send_otp_email
-            
-            code = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
-            expires = (datetime.utcnow() + timedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S')
-            
-            conn = sqlite3.connect(DATABASE)
-            c = conn.cursor()
-            c.execute("INSERT INTO otps (user_id, code, expires_at) VALUES (?, ?, ?)", (user[0], code, expires))
-            conn.commit()
-            conn.close()
-            
-            session['pending_user_id'] = user[0]
-            session['pending_is_admin'] = bool(user[2])
-            
-            success = send_otp_email(email, code)
-            if not success:
-                flash(f"DEV MODE: Your OTP code is {code}")
-            
-            return redirect(url_for('verify_otp'))
+            session.permanent = True
+            session['user_id'] = user[0]
+            session['is_admin'] = bool(user[2])
+            return redirect(url_for('dashboard'))
         else:
-            flash("Invalid email or password.")
-            return render_template('login.html')
+            flash("Invalid email or password")
             
     return render_template('login.html')
 
