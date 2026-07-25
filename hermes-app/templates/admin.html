@@ -148,13 +148,15 @@
                         <th>ID</th>
                         <th>Email</th>
                         <th>Role</th>
+                        <th>Plan</th>
+                        <th>Tokens Used</th>
                         <th>Active Trackers</th>
                         <th>Scans Executed</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="users-table-body">
-                    <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading...</td></tr>
+                    <tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -197,6 +199,8 @@
                         <td>#${u.id}</td>
                         <td>${u.email}</td>
                         <td>${u.is_admin ? '<span style="color:#fbbf24;font-weight:600;">Admin</span>' : 'User'}</td>
+                        <td style="text-transform: capitalize;">${u.plan_tier}</td>
+                        <td style="font-family: monospace; color: #a78bfa;">${u.tokens_used.toLocaleString()}</td>
                         <td>${u.trackers}</td>
                         <td style="font-family: monospace;">${u.scans.toLocaleString()}</td>
                         <td>
@@ -204,7 +208,7 @@
                         </td>
                     </tr>
                 `).join('');
-                document.getElementById('users-table-body').innerHTML = usersHtml || '<tr><td colspan="6" style="text-align:center;">No users found.</td></tr>';
+                document.getElementById('users-table-body').innerHTML = usersHtml || '<tr><td colspan="8" style="text-align:center;">No users found.</td></tr>';
 
                 // Fetch Logs
                 const logsRes = await fetch('/api/admin/logs');
@@ -221,7 +225,7 @@
 
             } catch (error) {
                 console.error("Failed to load admin data:", error);
-                document.getElementById('users-table-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:red;">Error loading data. Are you an admin?</td></tr>';
+                document.getElementById('users-table-body').innerHTML = '<tr><td colspan="8" style="text-align:center;color:red;">Error loading data. Are you an admin?</td></tr>';
             }
         }
 

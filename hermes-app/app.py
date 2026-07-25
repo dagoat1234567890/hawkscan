@@ -1093,10 +1093,11 @@ def api_admin_users():
     cursor = conn.cursor()
     cursor.execute('''SELECT u.id, u.email, u.is_admin, 
                              (SELECT COUNT(*) FROM trackers WHERE user_id = u.id AND is_active = 1) as trackers,
-                             (SELECT SUM(scan_count) FROM trackers WHERE user_id = u.id) as total_scans
+                             (SELECT SUM(scan_count) FROM trackers WHERE user_id = u.id) as total_scans,
+                             u.plan_tier, u.total_tokens_used
                       FROM users u
                       ORDER BY u.id DESC''')
-    users = [{"id": row[0], "email": row[1], "is_admin": bool(row[2]), "trackers": row[3], "scans": row[4] or 0} for row in cursor.fetchall()]
+    users = [{"id": row[0], "email": row[1], "is_admin": bool(row[2]), "trackers": row[3], "scans": row[4] or 0, "plan_tier": row[5] or 'free', "tokens_used": row[6] or 0} for row in cursor.fetchall()]
     conn.close()
     return jsonify({"users": users})
 
