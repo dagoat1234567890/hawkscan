@@ -255,7 +255,8 @@ class HawkscanAgent:
                     title = title_elem.get_text(strip=True) if title_elem else ""
                     
                     link_elem = p.find("a", class_="a-link-normal s-no-outline")
-                    href = "https://www.amazon.ae" + link_elem.get("href") if link_elem else ""
+                    raw_href = link_elem.get("href", "") if link_elem else ""
+                    href = raw_href if raw_href.startswith("http") else "https://www.amazon.ae" + raw_href if raw_href else ""
                     href = self._clean_url(href)
                     
                     card_text = p.get_text(separator=' ', strip=True)
@@ -677,7 +678,7 @@ class HawkscanAgent:
         Task:
         1. {f"Extract our exact price ('my_price') from the official product URL provided above ({catalog_url}). IF YOU CANNOT FIND IT, fall back to identifying the listing sold by our company (which may appear as a variation of '{company_name}', or even just '{company_name.split()[0]}'), and extract its price." if catalog_url else f"Identify the listing sold by our company (which may appear as a variation of '{company_name}', or even just '{company_name.split()[0]}'). If there are multiple, pick the one that closest matches the requested product."} 
         2. CRITICAL FOR MY_PRICE: Verify that the 'Title' of the product matches the requested product specs: '{product_name}'. However, be extremely lenient with purely cosmetic variations: if our company sells a blue version or special packaging, and the requested product is generic, ACCEPT IT as 'my_price'. If our exact product is completely missing, set "my_price" to null.
-        3. Identify real competitor listings ONLY from '{platform_domain}'. Ignore listings from other websites. CRITICAL: Do NOT extract any listings as competitors if the seller contains the word '{company_name.split()[0]}'! They are our own products! (NOTE: If the seller name is not visible in the snippet, you MUST STILL extract the listing and set the seller to 'Unknown').
+        3. Identify real competitor listings ONLY from '{platform_domain}'. Ignore listings from other websites. CRITICAL: Do NOT extract any listings as competitors if the seller contains the word '{company_name.split()[0]}'! They are our own products! (NOTE: If the seller name is not visible in the snippet, you MUST STILL extract the listing and set the seller to 'Unknown'). CRITICAL: Do NOT extract generic search pages, category pages, or store pages as competitors. The URL MUST point to a specific individual product (e.g., containing '/dp/' for Amazon or '/p/' for Noon).
         4. CRITICAL SPECIFICATION CHECK: Verify that the competitor product core specifications match '{product_name}'. Ensure all extracted prices are in AED.
            - KEYWORD STRICTNESS: The competitor title MUST logically represent the same core product. If '{product_name}' is a device, do NOT extract cases, screen protectors, or accessories. If it is a gold/silver bar, do NOT extract necklaces, jewelry, or coins.
            - MATERIAL MATCHING: If '{product_name}' specifies "Gold", REJECT any product containing "Silver". If '{product_name}' specifies "Silver", REJECT any product containing "Gold".
