@@ -108,6 +108,10 @@
     <div class="bg-blobs">
         <div class="blob blob-1" style="background: rgba(251, 191, 36, 0.2);"></div>
         <div class="blob blob-2" style="background: rgba(245, 158, 11, 0.2);"></div>
+        <div class="particle animate-float" style="width: 50px; height: 50px; background: rgba(255, 0, 127, 0.2); border-radius: 50%; position: absolute; top: 20%; left: 10%;"></div>
+        <div class="particle animate-float delay-200" style="width: 30px; height: 30px; background: rgba(0, 229, 255, 0.3); border-radius: 50%; position: absolute; top: 60%; left: 80%;"></div>
+        <div class="particle animate-float delay-500" style="width: 70px; height: 70px; background: rgba(255, 0, 127, 0.1); border-radius: 50%; position: absolute; top: 80%; left: 20%;"></div>
+        <div class="particle animate-float delay-300" style="width: 40px; height: 40px; background: rgba(0, 229, 255, 0.2); border-radius: 50%; position: absolute; top: 15%; left: 75%;"></div>
     </div>
     <nav class="navbar">
         <div class="nav-content">
@@ -199,8 +203,18 @@
                         <td>#${u.id}</td>
                         <td>${u.email}</td>
                         <td>${u.is_admin ? '<span style="color:#fbbf24;font-weight:600;">Admin</span>' : 'User'}</td>
-                        <td style="text-transform: capitalize;">${u.plan_tier}</td>
-                        <td style="font-family: monospace; color: #a78bfa;">${u.tokens_used.toLocaleString()}</td>
+                        <td>
+                            <select id="plan-${u.id}" style="padding: 0.25rem; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); text-transform: capitalize;">
+                                <option value="free" ${u.plan_tier === 'free' ? 'selected' : ''}>Free</option>
+                                <option value="pro" ${u.plan_tier === 'pro' ? 'selected' : ''}>Pro</option>
+                                <option value="ultra" ${u.plan_tier === 'ultra' ? 'selected' : ''}>Ultra</option>
+                            </select>
+                            <button class="action-btn" style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-left: 0.5rem;" onclick="updatePlan(${u.id})">Save</button>
+                        </td>
+                        <td>
+                            <input type="number" id="tokens-${u.id}" value="${u.tokens_used}" style="width: 80px; padding: 0.25rem; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color); font-family: monospace;">
+                            <button class="action-btn" style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-left: 0.5rem;" onclick="updateTokens(${u.id})">Save</button>
+                        </td>
                         <td>${u.trackers}</td>
                         <td style="font-family: monospace;">${u.scans.toLocaleString()}</td>
                         <td>
@@ -242,6 +256,55 @@
             } catch (e) {
                 console.error(e);
                 alert("Error deleting user.");
+            }
+        }
+
+        async function updatePlan(id) {
+            const select = document.getElementById(`plan-${id}`);
+            const newPlan = select.value;
+            
+            try {
+                const res = await fetch(`/api/admin/users/${id}/plan`, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plan: newPlan })
+                });
+                
+                if (res.ok) {
+                    // Flash success on the select element
+                    const origBg = select.style.background;
+                    select.style.background = 'rgba(16, 185, 129, 0.2)';
+                    setTimeout(() => select.style.background = origBg, 1000);
+                } else {
+                    alert("Failed to update plan.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error updating plan.");
+            }
+        }
+
+        async function updateTokens(id) {
+            const input = document.getElementById(`tokens-${id}`);
+            const newTokens = input.value;
+            
+            try {
+                const res = await fetch(`/api/admin/users/${id}/tokens`, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tokens: newTokens })
+                });
+                
+                if (res.ok) {
+                    const origBg = input.style.background;
+                    input.style.background = 'rgba(16, 185, 129, 0.2)';
+                    setTimeout(() => input.style.background = origBg, 1000);
+                } else {
+                    alert("Failed to update tokens.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error updating tokens.");
             }
         }
 

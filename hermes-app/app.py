@@ -1129,6 +1129,37 @@ def api_admin_logs():
     conn.close()
     return jsonify({"logs": logs})
 
+@app.route('/api/admin/users/<int:user_id>/plan', methods=['POST'])
+@admin_required
+def api_admin_update_plan(user_id):
+    data = request.json
+    new_plan = data.get('plan')
+    if new_plan not in ['free', 'pro', 'ultra']:
+        return jsonify({"error": "Invalid plan tier"}), 400
+        
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET plan_tier = ? WHERE id = ?", (new_plan, user_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route('/api/admin/users/<int:user_id>/tokens', methods=['POST'])
+@admin_required
+def api_admin_update_tokens(user_id):
+    data = request.json
+    try:
+        new_tokens = int(data.get('tokens', 0))
+    except ValueError:
+        return jsonify({"error": "Tokens must be an integer"}), 400
+        
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET total_tokens_used = ? WHERE id = ?", (new_tokens, user_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
 @app.route('/api/create-checkout-session', methods=['POST'])
 @login_required_api
 def create_checkout_session():
