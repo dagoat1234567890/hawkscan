@@ -693,6 +693,7 @@ class HawkscanAgent:
         6. EXTRACTING PRICES: Output the extracted data exactly matching the JSON Schema below.
            - **CRITICAL: PRESERVE CENTS/DECIMALS!** If a price appears as 'AED 397 . 02' or '397.02', you MUST extract `397.02`. Do NOT round to `397.0`. Always keep the exact decimal value.
            - **CRITICAL ANTI-HALLUCINATION RULE:** If the price is NOT explicitly visible in the search snippet or page text, you MUST completely ignore and discard the listing. DO NOT guess, estimate, or hallucinate prices.
+           - **CRITICAL OUTPUT LIMIT:** You MUST NOT extract more than 10 competitors. If you find more than 10 valid competitors, just extract the top 10 and STOP to ensure the JSON does not truncate!
         """
         prompt += f"""
         Format the output EXACTLY as JSON. If no valid competitor is found (e.g., you are the sole seller), return an empty list for competitors. DO NOT include markdown formatting. DO NOT include explanation text or reasoning. ONLY output valid JSON.        
