@@ -468,6 +468,9 @@ def api_analyze_seo():
     if plan_tier == 'free' and seo_analyses_created >= 3:
         conn.close()
         return jsonify({"error": "You have reached the limit of 3 SEO analyses on the Free tier. Please upgrade to Pro or Ultra."}), 402
+    elif plan_tier == 'pro' and seo_analyses_created >= 50:
+        conn.close()
+        return jsonify({"error": "You have reached the limit of 50 SEO analyses on the Pro tier. Please upgrade to Ultra for unlimited."}), 402
         
     cursor.execute("UPDATE users SET seo_analyses_created = seo_analyses_created + 1 WHERE id = ?", (user_id,))
     conn.commit()
@@ -810,6 +813,9 @@ def api_chat():
             if plan_tier == 'free' and chats_created >= 10:
                 conn.close()
                 return jsonify({"error": "You have reached the limit of 10 chats on the Free tier. Please upgrade to Pro or Ultra."}), 402
+            elif plan_tier == 'pro' and chats_created >= 250:
+                conn.close()
+                return jsonify({"error": "You have reached the limit of 250 chats on the Pro tier. Please upgrade to Ultra for unlimited access."}), 402
                 
         # Create new conversation
         title = message[:30] + "..." if len(message) > 30 else message
