@@ -837,6 +837,16 @@ For Noon: Focus on localized content and operational signals. Listings MUST be o
 
 Format your response in Markdown with clear headings (e.g., Title & Intent Optimization, Conversational Bullet Points, Visual Strategy, Backend Attributes) and actionable examples.
 """
+        # Fetch real-time context to prevent hallucinations on newer products
+        realtime_context = ""
+        try:
+            search_results = self._search_ddg_html(f"{product_name} specifications features")
+            if search_results:
+                snippets = [res.get("snippet", "") for res in search_results[:4]]
+                realtime_context = " ".join(snippets)
+        except Exception as e:
+            print(f"Failed to fetch realtime context for SEO: {e}")
+
         user_message = f"""
 Please analyze and provide SEO tips for my product:
 - Product Name: {product_name}
@@ -844,6 +854,7 @@ Please analyze and provide SEO tips for my product:
 - Platform: {platform}
 - My Price: AED {current_price if current_price else 'Not provided'}
 - Competitors/Keywords Context: {target_competitors if target_competitors else 'None provided'}
+- Real-Time Product Specs (Web Context): {realtime_context if realtime_context else 'None available'}
 """
         try:
             response = self.anthropic_client.messages.create(
