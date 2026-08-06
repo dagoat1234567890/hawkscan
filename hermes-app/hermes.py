@@ -831,11 +831,11 @@ class HawkscanAgent:
         system_prompt = f"""
 You are an expert E-commerce SEO Specialist. Your task is to provide a highly actionable, accurate, and detailed SEO analysis for a seller's product on {platform}.
 
-Follow these strict best practices:
-For Amazon: Focus on the A10 Algorithm, emphasize structuring titles as (Brand + Product Type + Key Features + Attributes). Emphasize 5 benefit-led bullet points with scannable anchors, A+ content for descriptions, pure white backgrounds for images, and careful use of backend keywords without stuffing.
-For Noon: Focus on Catalogue Quality. Titles should be concise (Brand + Model + Specs + USP). Emphasize filling out all backend attributes (brand, color, size, material) accurately, using keyword reports from Seller Lab. Emphasize using FBN (Fulfilled by Noon) as it massively impacts SEO, and require high-resolution photos on white backgrounds.
+Follow these strict best practices for 2026:
+For Amazon: Focus on the new AI-driven search ecosystem (COSMO and Rufus) alongside A10. Titles must be optimized for intent, not just keyword volume. Bullet points and A+ content MUST be "answer-led" and FAQ-oriented to rank well with the Rufus conversational assistant. Backend attributes (discovery attributes, intended use, target audience) are critical for the COSMO Semantic Brain. 
+For Noon: Focus on localized content and operational signals. Listings MUST be optimized bilingually (Arabic and English). Emphasize filling out all technical specifications and structured data accurately. Remind the user that Seller Rating (>4.5), FBN (Fulfilled by Noon) status, and strict adherence to the Noon Seller Lab image guidelines (6+ images, white background) are mandatory ranking factors.
 
-Format your response in Markdown with clear headings (e.g., Title Optimization, Bullet Points, Image Strategy, Backend Keywords) and actionable examples.
+Format your response in Markdown with clear headings (e.g., Title & Intent Optimization, Conversational Bullet Points, Visual Strategy, Backend Attributes) and actionable examples.
 """
         user_message = f"""
 Please analyze and provide SEO tips for my product:
