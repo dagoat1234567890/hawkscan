@@ -29,7 +29,8 @@ def init_db():
             total_tokens_used INTEGER DEFAULT 0,
             plan_tier TEXT DEFAULT 'free',
             available_scans INTEGER DEFAULT 10,
-            chats_created INTEGER DEFAULT 0
+            chats_created INTEGER DEFAULT 0,
+            seo_analyses_created INTEGER DEFAULT 0
         )
     """)
     cursor.execute("""
@@ -151,6 +152,11 @@ def init_db():
         
     try:
         cursor.execute("ALTER TABLE users ADD COLUMN chats_created INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN seo_analyses_created INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass
 
@@ -453,9 +459,18 @@ def api_analyze_seo():
             return jsonify({"error": "Product not found"}), 404
         product_name, company_name, platform, current_price = row[0], row[1], row[2], row[3]
         
-    cursor.execute("SELECT target_competitors FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT target_competitors, plan_tier, seo_analyses_created FROM users WHERE id = ?", (user_id,))
     user_row = cursor.fetchone()
     target_competitors = user_row[0] if user_row else None
+    plan_tier = user_row[1] if user_row else 'free'
+    seo_analyses_created = user_row[2] if user_row else 0
+    
+    if plan_tier == 'free' and seo_analyses_created >= 3:
+        conn.close()
+        return jsonify({"error": "You have reached the limit of 3 SEO analyses on the Free tier. Please upgrade to Pro or Ultra."}), 402
+        
+    cursor.execute("UPDATE users SET seo_analyses_created = seo_analyses_created + 1 WHERE id = ?", (user_id,))
+    conn.commit()
     conn.close()
     
     if not product_name or not platform:
