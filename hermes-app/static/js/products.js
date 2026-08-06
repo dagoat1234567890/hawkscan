@@ -47,7 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
             product_name: document.getElementById('modal-product-name').value,
             company_name: document.getElementById('modal-company-name').value,
             platform: document.getElementById('modal-platform').value,
-            catalog_url: document.getElementById('modal-catalog-url').value
+            catalog_url: document.getElementById('modal-catalog-url').value,
+            extra_details: document.getElementById('modal-extra-details').value
         };
 
         try {

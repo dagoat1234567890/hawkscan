@@ -532,13 +532,13 @@ class HawkscanAgent:
         except Exception as e:
             return self._error_response(f"Custom price analysis failed: {str(e)}")
 
-    def analyze_prices(self, product_name, company_name, platform, catalog_url=None, target_competitors=None):
+    def analyze_prices(self, product_name, company_name, platform, catalog_url=None, target_competitors=None, extra_details=None):
         if self.anthropic_api_key:
-            return self._analyze_prices_official(product_name, company_name, platform, catalog_url, target_competitors)
+            return self._analyze_prices_official(product_name, company_name, platform, catalog_url, target_competitors, extra_details)
         else:
             return self._error_response("ANTHROPIC_API_KEY is missing. Hawkscan is disabled.")
             
-    def _analyze_prices_official(self, product_name, company_name, platform, catalog_url=None, target_competitors=None):
+    def _analyze_prices_official(self, product_name, company_name, platform, catalog_url=None, target_competitors=None, extra_details=None):
         """Uses a local search and scraping pipeline combined with a direct OpenRouter call for robust price extraction."""
         platform_lower = platform.lower()
         
@@ -627,7 +627,7 @@ class HawkscanAgent:
         # 3. Fallback to Amazon.ae direct search if no listings found for non-Amazon platform
         if not listings and not is_fallback and "amazon" not in platform_lower:
             print(f"No listings found for {original_platform}. Falling back to Amazon.ae search...")
-            return self._analyze_prices_official(product_name, company_name, f"Amazon.ae (Fallback for {original_platform})", catalog_url)
+            return self._analyze_prices_official(product_name, company_name, f"Amazon.ae (Fallback for {original_platform})", catalog_url, target_competitors, extra_details)
                  
         catalog_text = ""
         if catalog_url and not is_fallback:
@@ -649,6 +649,8 @@ class HawkscanAgent:
         prompt = f"""
         You are Hawkscan, an expert market analyst agent.
         Your task is to analyze price information from search snippets and webpage contents for the product '{product_name}' on '{platform_source_label}'.
+        
+        {f"USER'S EXTRA DETAILS / INSTRUCTIONS: {extra_details}" if extra_details else ""}
         
         {f"CRITICAL: The user provided their official product URL: {catalog_url}." if catalog_url else ""}
         {f"We fetched its text: '{catalog_text}'. You must extract 'my_price' from this text if possible. IF NOT FOUND in the text, you MUST check the 'Market listings found' below to see if any URL matches {catalog_url} and use its price as 'my_price'." if catalog_url else ""}

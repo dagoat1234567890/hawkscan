@@ -95,6 +95,7 @@ def init_db():
             last_market_low_seller TEXT,
             last_market_high_title TEXT,
             last_market_low_title TEXT,
+            extra_details TEXT,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     """)
@@ -127,6 +128,11 @@ def init_db():
         
     try:
         cursor.execute("ALTER TABLE trackers ADD COLUMN last_market_low_title TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE trackers ADD COLUMN extra_details TEXT")
     except sqlite3.OperationalError:
         pass
 
@@ -552,11 +558,12 @@ def api_analyze():
 
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, catalog_url FROM trackers WHERE user_id = ? AND product_name = ? AND company_name = ? AND platform = ?", 
+    cursor.execute("SELECT id, catalog_url, extra_details FROM trackers WHERE user_id = ? AND product_name = ? AND company_name = ? AND platform = ?", 
                   (user_id, product_name, company_name, platform))
     row = cursor.fetchone()
     tracker_id = row[0] if row else None
     catalog_url = row[1] if row else None
+    extra_details = row[2] if row else None
     
     cursor.execute("SELECT target_competitors, available_scans, is_admin FROM users WHERE id = ?", (user_id,))
     comp_row = cursor.fetchone()
@@ -570,7 +577,7 @@ def api_analyze():
     target_competitors = comp_row[0] if comp_row and comp_row[0] else None
 
     try:
-        results = agent.analyze_prices(product_name, company_name, platform, catalog_url=catalog_url, target_competitors=target_competitors)
+        results = agent.analyze_prices(product_name, company_name, platform, catalog_url, comp_row[0] if comp_row else None, extra_details)
     except Exception as e:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
@@ -903,6 +910,7 @@ def api_track():
     company_name = data.get('company_name', '').strip()
     platform = data.get('platform', '').strip()
     catalog_url = data.get('catalog_url', '').strip()
+    extra_details = data.get('extra_details', '').strip()
     
     if not all([product_name, company_name, platform]):
         return jsonify({"error": "Missing required fields"}), 400
@@ -920,8 +928,8 @@ def api_track():
     initial_active_state = 0 if (plan_tier == 'free' and not is_admin) else 1
         
     cursor.execute(
-        "INSERT INTO trackers (user_id, product_name, company_name, platform, baseline_price, catalog_url, is_active) VALUES (?, ?, ?, ?, NULL, ?, ?)",
-        (user_id, product_name, company_name, platform, catalog_url, initial_active_state)
+        "INSERT INTO trackers (user_id, product_name, company_name, platform, baseline_price, catalog_url, is_active, extra_details) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)",
+        (user_id, product_name, company_name, platform, catalog_url, initial_active_state, extra_details)
     )
     conn.commit()
     conn.close()
