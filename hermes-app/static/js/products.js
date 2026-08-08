@@ -139,8 +139,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const makePriceLink = (priceText, type = null) => {
                 let url = getSearchUrl();
-                if (type === 'baseline' && product.catalog_url && product.catalog_url !== 'N/A') {
-                    url = product.catalog_url;
+                let isFallback = false;
+                
+                if (type === 'baseline') {
+                    if (product.last_my_url && product.last_my_url !== 'N/A') {
+                        url = product.last_my_url;
+                    } else if (product.catalog_url && product.catalog_url !== 'N/A') {
+                        url = product.catalog_url;
+                    }
+                    if (product.last_my_price_is_fallback) {
+                        isFallback = true;
+                    }
                 } else if (type === 'high' && product.last_market_high_url && product.last_market_high_url !== 'N/A') {
                     url = product.last_market_high_url;
                 } else if (type === 'low' && product.last_market_low_url && product.last_market_low_url !== 'N/A') {
@@ -152,7 +161,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     url = 'https://' + url;
                 }
                 
-                return `<a href="${url}" target="_blank" class="price-link" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 2px;" title="View on ${product.platform}" onmouseover="this.style.borderBottom='1px solid var(--accent-primary)'" onmouseout="this.style.borderBottom='1px dashed rgba(255,255,255,0.3)'">${priceText}</a>`;
+                let linkHtml = `<a href="${url}" target="_blank" class="price-link" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 2px;" title="View on ${product.platform}" onmouseover="this.style.borderBottom='1px solid var(--accent-primary)'" onmouseout="this.style.borderBottom='1px dashed rgba(255,255,255,0.3)'">${priceText}</a>`;
+                
+                if (isFallback) {
+                    linkHtml += ` <span title="Found similar product" style="cursor: help; margin-left: 4px; font-size: 0.9em;">⚠️</span>`;
+                }
+                
+                return linkHtml;
             };
 
             row.innerHTML = `
