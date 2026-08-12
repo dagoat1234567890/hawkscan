@@ -841,6 +841,7 @@ For Amazon: Focus on the new AI-driven search ecosystem (COSMO and Rufus) alongs
 For Noon: Focus on localized content and operational signals. Listings MUST be optimized bilingually (Arabic and English). Emphasize filling out all technical specifications and structured data accurately. Remind the user that Seller Rating (>4.5), FBN (Fulfilled by Noon) status, and strict adherence to the Noon Seller Lab image guidelines (6+ images, white background) are mandatory ranking factors.
 
 Format your response in Markdown with clear headings (e.g., Title & Intent Optimization, Conversational Bullet Points, Visual Strategy, Backend Attributes) and actionable examples.
+IMPORTANT: You must keep your analysis concise and completely finish your response without getting cut off. Prioritize the most impactful tips over an exhaustive list.
 """
         # Fetch real-time context to prevent hallucinations on newer products
         realtime_context = ""
@@ -864,7 +865,7 @@ Please analyze and provide SEO tips for my product:
         try:
             response = self.anthropic_client.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=4000,
+                max_tokens=8192,
                 temperature=0.7,
                 system=system_prompt,
                 messages=[
