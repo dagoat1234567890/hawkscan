@@ -252,9 +252,23 @@ class HawkscanAgent:
                 products = soup.find_all("div", {"data-component-type": "s-search-result"})
                 for p in products[:6]:
                     title_elem = p.find("h2")
+                    if not title_elem:
+                        title_elem = p.find("span", class_="a-text-normal")
                     title = title_elem.get_text(strip=True) if title_elem else ""
                     
-                    link_elem = p.find("a", class_="a-link-normal s-no-outline")
+                    link_elem = None
+                    if title_elem:
+                        if title_elem.parent and title_elem.parent.name == "a":
+                            link_elem = title_elem.parent
+                        elif title_elem.find("a"):
+                            link_elem = title_elem.find("a")
+                            
+                    if not link_elem:
+                        for l in p.find_all("a", href=True):
+                            if "/dp/" in l.get("href", ""):
+                                link_elem = l
+                                break
+                    
                     raw_href = link_elem.get("href", "") if link_elem else ""
                     href = raw_href if raw_href.startswith("http") else "https://www.amazon.ae" + raw_href if raw_href else ""
                     href = self._clean_url(href)
