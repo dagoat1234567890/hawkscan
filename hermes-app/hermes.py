@@ -372,7 +372,7 @@ class HawkscanAgent:
             print(f"Direct Noon API search error: {e}")
         return results
 
-    def _call_anthropic(self, messages, max_tokens=4000, temperature=0.1):
+    def _call_anthropic(self, messages, max_tokens=4000):
         """Sends a request to Anthropic API using Claude 3.5 Sonnet."""
         import time
         if not self.anthropic_client:
@@ -385,7 +385,6 @@ class HawkscanAgent:
                 response = self.anthropic_client.messages.create(
                     model="claude-haiku-4-5-20251001",
                     max_tokens=max_tokens,
-                    temperature=temperature,
                     messages=messages
                 )
                 tokens_used = response.usage.input_tokens + response.usage.output_tokens
@@ -532,7 +531,7 @@ class HawkscanAgent:
             prompt += f"\n[Listing {i+1}]\nURL: {listing['url']}\nText Snippet: {listing['snippet'][:1500]}\n"
             
         try:
-            raw_response, tokens_used = self._call_anthropic([{"role": "user", "content": prompt}], max_tokens=4000, temperature=0.1)
+            raw_response, tokens_used = self._call_anthropic([{"role": "user", "content": prompt}], max_tokens=4000)
             data = self._parse_json_response(raw_response)
             
             if not data:
@@ -880,7 +879,6 @@ Please analyze and provide SEO tips for my product:
             response = self.anthropic_client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=8192,
-                temperature=0.7,
                 system=system_prompt,
                 messages=[
                     {"role": "user", "content": user_message}
@@ -983,7 +981,6 @@ Please analyze and provide SEO tips for my product:
                     model="claude-haiku-4-5-20251001",
                     system=system_prompt,
                     max_tokens=2000,
-                    temperature=0.1,
                     messages=messages,
                     tools=tools
                 )
