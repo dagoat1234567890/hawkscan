@@ -263,6 +263,11 @@ class HawkscanAgent:
                         title_elem = p.find("span", class_="a-text-normal")
                     title = title_elem.get_text(strip=True) if title_elem else ""
                     
+                    img_elem = p.find("img", class_="s-image")
+                    img_alt = img_elem.get("alt", "") if img_elem else ""
+                    if img_alt and len(img_alt) > len(title):
+                        title = img_alt
+                    
                     link_elem = None
                     if title_elem:
                         if title_elem.parent and title_elem.parent.name == "a":
