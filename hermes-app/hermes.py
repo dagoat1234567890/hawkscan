@@ -1013,13 +1013,16 @@ Please analyze and provide SEO tips for my product:
                             
                             # Call our existing scrapers
                             platform_lower = platform.lower()
+                            listings = []
                             if "amazon" in platform_lower:
                                 listings = self._fetch_amazon_search_direct(product_name)
                             elif "noon" in platform_lower:
                                 listings = self._fetch_noon_search_direct(product_name)
-                            else:
+                                
+                            if not listings:
                                 domain_map = {"careem": "careem.com"}
                                 platform_domain = domain_map.get(platform_lower, platform_lower + ".com")
+                                if "amazon" in platform_lower: platform_domain = "amazon.ae"
                                 query = f"{product_name} site:{platform_domain}"
                                 listings = self._search_ddg_html(query)
                                 
