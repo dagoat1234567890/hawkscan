@@ -251,7 +251,14 @@ class HawkscanAgent:
                 soup = BeautifulSoup(res.text, "html.parser")
                 products = soup.find_all("div", {"data-component-type": "s-search-result"})
                 for p in products[:6]:
-                    title_elem = p.find("h2")
+                    title_elem = p.find("h2", class_="a-text-normal")
+                    if not title_elem:
+                        for h2 in p.find_all("h2"):
+                            if h2.parent and h2.parent.name == "a":
+                                title_elem = h2
+                                break
+                    if not title_elem:
+                        title_elem = p.find("h2")
                     if not title_elem:
                         title_elem = p.find("span", class_="a-text-normal")
                     title = title_elem.get_text(strip=True) if title_elem else ""
