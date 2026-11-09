@@ -7,3 +7,6 @@ __pycache__/
 scratch/
 .env
 .google-cookie
+*.db
+*.db-journal
+test_venv/

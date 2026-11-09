@@ -193,7 +193,24 @@ def init_db():
 init_db()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
+
+# The session cookie is signed with SECRET_KEY; anyone who knows it can forge a
+# login (including admin). Refuse to start without a strong, non-default key.
+_WEAK_SECRET_KEYS = {"dev-secret-key", "super_secret_dev_key", "changeme", "secret"}
+_secret_key = os.environ.get("SECRET_KEY", "")
+if len(_secret_key) < 32 or _secret_key in _WEAK_SECRET_KEYS:
+    raise RuntimeError(
+        "SECRET_KEY is missing or too weak (need 32+ random characters). "
+        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\" "
+        "and put it in .env as SECRET_KEY=..."
+    )
+app.secret_key = _secret_key
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # Set SESSION_COOKIE_SECURE=1 in production (HTTPS) so the cookie is never sent over plain HTTP.
+    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "0") == "1",
+)
 
 # Initialize Hawkscan Agent
 agent = HawkscanAgent()
@@ -410,20 +427,6 @@ def sign_up():
             conn.close()
             
     return render_template('sign-up.html')
-
-@app.route('/force-admin')
-def force_admin():
-    if 'user_id' in session:
-        user_id = session['user_id']
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET is_admin = 1, plan_tier = 'ultra', available_scans = -1 WHERE id = ?", (user_id,))
-        conn.commit()
-        conn.close()
-    
-    session['is_admin'] = True
-    session['user_id'] = session.get('user_id', 1) # Fallback to 1 if not logged in
-    return "SUCCESS! Admin privileges forced and account upgraded to Ultra. You can now go back to the dashboard."
 
 @app.route('/logout')
 def logout():

@@ -25,6 +25,9 @@ services:
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      # Signs session cookies. REQUIRED: the app refuses to start without a strong value.
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in hermes-app/.env}
+      - SESSION_COOKIE_SECURE=1
 
   hawkscan-worker:
     build: .
