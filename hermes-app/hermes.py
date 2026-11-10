@@ -1041,10 +1041,23 @@ Please analyze and provide SEO tips for my product:
                                 import sqlite3
                                 conn = sqlite3.connect('users.db')
                                 c = conn.cursor()
-                                c.execute("INSERT INTO trackers (user_id, product_name, company_name, platform) VALUES (?, ?, ?, ?)", (user_id, product_name, company_name, platform))
+                                # Same rule as /api/track: free users can add products,
+                                # but background tracking stays off until they upgrade.
+                                c.execute("SELECT plan_tier, is_admin FROM users WHERE id = ?", (user_id,))
+                                row = c.fetchone()
+                                plan_tier = (row[0] if row else None) or 'free'
+                                is_admin = bool(row[1]) if row else False
+                                is_active = 0 if (plan_tier == 'free' and not is_admin) else 1
+                                c.execute(
+                                    "INSERT INTO trackers (user_id, product_name, company_name, platform, is_active) VALUES (?, ?, ?, ?, ?)",
+                                    (user_id, product_name, company_name, platform, is_active)
+                                )
                                 conn.commit()
                                 conn.close()
                                 tool_result_text = "Successfully added product to database."
+                                if not is_active:
+                                    tool_result_text += (" Background tracking is disabled because the user is on the Free tier;"
+                                                         " tell them they can run manual scans, or upgrade to Pro/Ultra for automatic tracking.")
                             except Exception as e:
                                 tool_result_text = f"Error adding product: {e}"
                             tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": tool_result_text})

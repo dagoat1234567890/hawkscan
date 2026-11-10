@@ -285,19 +285,28 @@ def forgot_password():
         if user:
             user_id = user[0]
             token = secrets.token_urlsafe(32)
+            # Only the newest reset link for an account stays valid.
+            cursor.execute("DELETE FROM password_resets WHERE user_id = ?", (user_id,))
             cursor.execute("INSERT INTO password_resets (user_id, token) VALUES (?, ?)", (user_id, token))
             conn.commit()
-            
-            reset_link = url_for('reset_password', token=token, _external=True)
-            
+
+            # Build the link from a fixed base URL, not the request's Host header,
+            # so a forged Host can't make the emailed link point at another domain.
+            base_url = os.environ.get("APP_BASE_URL", "").rstrip("/")
+            if base_url:
+                reset_link = base_url + url_for('reset_password', token=token)
+            else:
+                reset_link = url_for('reset_password', token=token, _external=True)
+
+            # Never show the link (or error details) in the response: whoever submits
+            # this form may not own the account. Failures are logged server-side only.
             try:
                 from emailer import send_password_reset_email
-                success = send_password_reset_email(email, reset_link)
-                if not success:
-                    flash("Email not configured. Here is your reset link (DEV MODE): " + reset_link)
+                if not send_password_reset_email(email, reset_link):
+                    print(f"Password reset email could not be sent for user {user_id}")
             except Exception as e:
-                flash("Error sending email: " + str(e))
-                
+                print(f"Password reset email error for user {user_id}: {e}")
+
         conn.close()
         flash("If that email exists, a reset link has been sent.")
         return redirect(url_for('login'))
