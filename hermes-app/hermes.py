@@ -903,12 +903,18 @@ Please analyze and provide SEO tips for my product:
 
 
     def chat(self, message, history=None, user_id=None):
-        """Returns (reply_text, tokens_used) where tokens_used sums every Claude call made for this message."""
+        """Returns (reply_text, tokens_used, actions).
+
+        tokens_used sums every Claude call made for this message; actions lists the
+        database changes that were actually carried out (for the UI notification).
+        """
         system_prompt = """
         You are Hawkscan, an AI agent for a competitive price-analysis and ecommerce web application. 
         You are flexible and can help the user with anything related to ecommerce.
         You have execution tools that can automatically add products, delete products, and update target competitors directly in the user's database.
         When asked to modify products or competitors, USE YOUR TOOLS to execute the action immediately, then confirm it was done.
+        Only say an action succeeded if the tool result says it did; if a tool reports a problem, tell the user.
+        When the user says they changed (or want to record) their own price for a tracked product, use `update_my_price`. This only updates the price stored in Hawkscan; you cannot change the live price on Amazon or Noon, so remind the user to change it in their seller account if they haven't.
         If the user asks for real-time prices, product searches, or competitive data, ALWAYS use the `search_market` tool to fetch live data from the web before answering.
         CRITICAL: When providing product listings, search results, or prices to the user, you MUST ALWAYS include clickable markdown links to the actual products (e.g., [Product Name](url)). Never return an unclickable URL.
         """
@@ -957,6 +963,25 @@ Please analyze and provide SEO tips for my product:
                 }
             },
             {
+                "name": "update_my_price",
+                "description": (
+                    "Records a new price (in AED) for one of the user's tracked products in Hawkscan's database. "
+                    "This is the 'your price' shown on the dashboard and compared against competitors for price-drop alerts. "
+                    "It does NOT change the live listing price on Amazon or Noon. The next scan may replace it with the price "
+                    "found on the live listing. Use the product name exactly as it appears in get_dashboard_data; if the user "
+                    "tracks the same product on several platforms, also pass the platform."
+                ),
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "product_name": {"type": "string", "description": "The tracked product's name, as shown on the dashboard."},
+                        "new_price": {"type": "number", "description": "The new price in AED, e.g. 1499.00."},
+                        "platform": {"type": "string", "description": "Optional. The platform of the tracker to update, e.g. 'Amazon.ae' or 'Noon'."}
+                    },
+                    "required": ["product_name", "new_price"]
+                }
+            },
+            {
                 "name": "update_competitors",
                 "description": "Updates the user's target competitors filter string.",
                 "input_schema": {
@@ -979,9 +1004,10 @@ Please analyze and provide SEO tips for my product:
         ]
 
         if not self.anthropic_client:
-            return "Anthropic API key is not configured. Please set ANTHROPIC_API_KEY in your .env file.", 0
+            return "Anthropic API key is not configured. Please set ANTHROPIC_API_KEY in your .env file.", 0, []
 
         tokens_used = 0
+        actions = []
         try:
             messages = []
             if history:
@@ -1060,6 +1086,7 @@ Please analyze and provide SEO tips for my product:
                                 conn.commit()
                                 conn.close()
                                 tool_result_text = "Successfully added product to database."
+                                actions.append(f"Added '{product_name}' ({platform}) to your products.")
                                 if not is_active:
                                     tool_result_text += (" Background tracking is disabled because the user is on the Free tier;"
                                                          " tell them they can run manual scans, or upgrade to Pro/Ultra for automatic tracking.")
@@ -1073,9 +1100,14 @@ Please analyze and provide SEO tips for my product:
                                 conn = sqlite3.connect('users.db')
                                 c = conn.cursor()
                                 c.execute("DELETE FROM trackers WHERE user_id = ? AND product_name = ?", (user_id, product_name))
+                                deleted = c.rowcount
                                 conn.commit()
                                 conn.close()
-                                tool_result_text = "Successfully deleted product from database."
+                                if deleted:
+                                    tool_result_text = f"Successfully deleted {deleted} tracker(s) named '{product_name}'."
+                                    actions.append(f"Deleted '{product_name}' from your products.")
+                                else:
+                                    tool_result_text = f"Nothing deleted: the user has no tracked product named exactly '{product_name}'. Use get_dashboard_data to see the exact names."
                             except Exception as e:
                                 tool_result_text = f"Error deleting product: {e}"
                             tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": tool_result_text})
@@ -1089,8 +1121,12 @@ Please analyze and provide SEO tips for my product:
                                 conn.commit()
                                 conn.close()
                                 tool_result_text = "Successfully updated target competitors."
+                                actions.append("Updated your target competitors.")
                             except Exception as e:
                                 tool_result_text = f"Error updating competitors: {e}"
+                            tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": tool_result_text})
+                        elif block.name == "update_my_price" and user_id:
+                            tool_result_text = self._update_my_price(user_id, block.input, actions)
                             tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": tool_result_text})
                         elif block.name == "get_dashboard_data" and user_id:
                             try:
@@ -1119,11 +1155,57 @@ Please analyze and provide SEO tips for my product:
                 else:
                     # Final response (text) received
                     text_blocks = [block.text for block in response.content if block.type == "text"]
-                    return "".join(text_blocks).strip(), tokens_used
+                    return "".join(text_blocks).strip(), tokens_used, actions
 
             # Fallback if loop finishes without stopping
             text_blocks = [block.text for block in response.content if block.type == "text"]
-            return "".join(text_blocks).strip(), tokens_used
+            return "".join(text_blocks).strip(), tokens_used, actions
 
         except Exception as e:
-            return f"Error communicating with Anthropic: {e}", tokens_used
+            return f"Error communicating with Anthropic: {e}", tokens_used, actions
+
+    def _update_my_price(self, user_id, tool_input, actions):
+        """Executes the update_my_price chat tool. Returns the tool_result text."""
+        import sqlite3
+        product_name = (tool_input.get("product_name") or "").strip()
+        platform = (tool_input.get("platform") or "").strip()
+        try:
+            new_price = round(float(tool_input.get("new_price")), 2)
+        except (TypeError, ValueError):
+            return "Error: new_price must be a number (AED)."
+        if new_price <= 0:
+            return "Error: new_price must be greater than 0."
+
+        conn = sqlite3.connect('users.db')
+        try:
+            c = conn.cursor()
+            query = "SELECT id, product_name, platform FROM trackers WHERE user_id = ? AND LOWER(product_name) = LOWER(?)"
+            params = [user_id, product_name]
+            if platform:
+                query += " AND LOWER(platform) = LOWER(?)"
+                params.append(platform)
+            matches = c.execute(query, params).fetchall()
+
+            if not matches:
+                names = [r[0] for r in c.execute("SELECT product_name FROM trackers WHERE user_id = ?", (user_id,)).fetchall()]
+                return (f"No price updated: no tracked product named '{product_name}'"
+                        + (f" on {platform}" if platform else "")
+                        + f". The user's tracked products are: {json.dumps(names)}")
+            platforms = sorted({r[2] for r in matches})
+            if len(platforms) > 1:
+                return (f"No price updated: '{product_name}' is tracked on several platforms {json.dumps(platforms)}. "
+                        "Ask the user which one, then call update_my_price again with the platform.")
+
+            # One tracker, or duplicate trackers of the same product on the same platform.
+            _, real_name, real_platform = matches[0]
+            c.executemany("""UPDATE trackers
+                             SET baseline_price = ?, last_price = ?, updated_at = CURRENT_TIMESTAMP
+                             WHERE id = ? AND user_id = ?""",
+                          [(new_price, new_price, r[0], user_id) for r in matches])
+            conn.commit()
+        finally:
+            conn.close()
+
+        actions.append(f"Your price for '{real_name}' ({real_platform}) is now AED {new_price:.2f} in Hawkscan.")
+        return (f"Updated the stored price for '{real_name}' ({real_platform}) to AED {new_price:.2f}. "
+                "Remind the user this does not change the live Amazon/Noon listing, and the next scan may replace it with the live price.")

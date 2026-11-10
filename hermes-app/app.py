@@ -113,6 +113,43 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     """)
+    # Price history for each tracker (one row per scan). Must exist before the
+    # scan_history migrations below run.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scan_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tracker_id INTEGER NOT NULL,
+            my_price REAL,
+            market_avg REAL,
+            market_high REAL,
+            market_low REAL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            market_high_url TEXT,
+            market_low_url TEXT,
+            my_url TEXT,
+            my_price_is_fallback BOOLEAN DEFAULT 0,
+            FOREIGN KEY (tracker_id) REFERENCES trackers (id) ON DELETE CASCADE
+        )
+    """)
+    # Sign-up verification codes
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS otps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            code TEXT NOT NULL,
+            expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    """)
+    # Stripe events already processed, so webhook retries never credit twice
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS stripe_events (
+            event_id TEXT PRIMARY KEY,
+            event_type TEXT,
+            user_id INTEGER,
+            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
     # Run migrations
     try:
@@ -941,9 +978,14 @@ def api_chat():
     cursor.execute("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY timestamp ASC", (conversation_id,))
     history_rows = cursor.fetchall()
     history = [{"role": row[0], "content": row[1]} for row in history_rows]
-    
+
+    # Commit (and release SQLite's write lock) before the slow Claude call. Otherwise the
+    # agent's own tool writes (add/delete product, update price...) on a new conversation
+    # fail with "database is locked", and every other request's writes stall meanwhile.
+    conn.commit()
+
     # Get reply from agent passing the history and user_id
-    response_text, tokens_used = agent.chat(message, history, user_id=user_id)
+    response_text, tokens_used, actions = agent.chat(message, history, user_id=user_id)
 
     # Save new messages
     cursor.execute("INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)", (conversation_id, "user", message))
@@ -954,10 +996,9 @@ def api_chat():
     conn.commit()
     conn.close()
     
-    action_taken = None
-    if "change my price" in message.lower() or "update price" in message.lower():
-        action_taken = "Price updated successfully via Hawkscan Execution Skill."
-        
+    # Only report changes the agent's tools actually made (no keyword-based fake confirmations).
+    action_taken = " ".join(actions) if actions else None
+
     return jsonify({
         "reply": response_text,
         "action": action_taken,
@@ -1361,31 +1402,57 @@ def stripe_webhook():
         return 'Invalid signature', 400
 
     if event['type'] == 'checkout.session.completed':
-        try:
-            session_obj = event['data']['object']
-            user_id = getattr(session_obj, 'client_reference_id', None)
-            metadata = getattr(session_obj, 'metadata', {})
-            
-            tier = getattr(metadata, 'tier', None) if metadata else None
-            scans_purchased = getattr(metadata, 'scans', 0) if metadata else 0
-            try:
-                scans_purchased = int(scans_purchased)
-            except (ValueError, TypeError):
-                scans_purchased = 0
+        event_id = event['id']
+        session_obj = event['data']['object']
+        user_id = getattr(session_obj, 'client_reference_id', None)
+        metadata = getattr(session_obj, 'metadata', {})
+        payment_status = getattr(session_obj, 'payment_status', None)
 
-            if user_id and tier:
-                conn = sqlite3.connect(DATABASE)
-                cursor = conn.cursor()
-                cursor.execute("UPDATE users SET plan_tier = ?, available_scans = IFNULL(available_scans, 0) + ? WHERE id = ?", (tier, scans_purchased, user_id))
-                conn.commit()
-                conn.close()
-                print(f"Upgraded user {user_id} to {tier} with {scans_purchased} scans.")
-            else:
-                print(f"Webhook error: Missing user_id ({user_id}) or tier ({tier})")
+        tier = getattr(metadata, 'tier', None) if metadata else None
+        scans_purchased = getattr(metadata, 'scans', 0) if metadata else 0
+        try:
+            scans_purchased = int(scans_purchased)
+        except (ValueError, TypeError):
+            scans_purchased = 0
+
+        if not (user_id and tier):
+            print(f"Webhook error: Missing user_id ({user_id}) or tier ({tier}) in event {event_id}")
+            return jsonify(success=True)
+        if payment_status != 'paid':
+            print(f"Webhook: checkout {event_id} completed with payment_status={payment_status}; not crediting.")
+            return jsonify(success=True)
+
+        conn = sqlite3.connect(DATABASE)
+        try:
+            cursor = conn.cursor()
+            # Recording the event and crediting the user happen in one transaction:
+            # a retried/duplicate delivery inserts nothing and credits nothing, and if
+            # the credit fails, the event isn't recorded, so Stripe's retry can succeed.
+            cursor.execute(
+                "INSERT OR IGNORE INTO stripe_events (event_id, event_type, user_id) VALUES (?, ?, ?)",
+                (event_id, event['type'], user_id)
+            )
+            if cursor.rowcount == 0:
+                conn.rollback()
+                print(f"Webhook: event {event_id} already processed; skipping.")
+                return jsonify(success=True, duplicate=True)
+            cursor.execute(
+                "UPDATE users SET plan_tier = ?, available_scans = IFNULL(available_scans, 0) + ? WHERE id = ?",
+                (tier, scans_purchased, user_id)
+            )
+            if cursor.rowcount == 0:
+                print(f"Webhook warning: event {event_id} refers to unknown user {user_id}; recorded without credit.")
+            conn.commit()
+            print(f"Upgraded user {user_id} to {tier} with {scans_purchased} scans (event {event_id}).")
         except Exception as e:
-            print(f"Webhook processing error: {e}")
+            conn.rollback()
+            print(f"Webhook processing error for event {event_id}: {e}")
             import traceback
             traceback.print_exc()
+            # Non-2xx makes Stripe retry later; the idempotency check keeps that safe.
+            return 'Webhook processing failed', 500
+        finally:
+            conn.close()
 
     return jsonify(success=True)
 
