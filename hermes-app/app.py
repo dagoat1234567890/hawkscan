@@ -14,7 +14,9 @@ import stripe
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 DATABASE = "users.db"
-SCAN_TASKS = {}
+# A "running" scan whose progress hasn't moved in this long is treated as dead
+# (e.g. the Gunicorn worker running it was restarted) so the user can start again.
+SCAN_TASK_STALE_MINUTES = 15
 
 def init_db():
     conn = sqlite3.connect(DATABASE)
@@ -100,6 +102,18 @@ def init_db():
         )
     """)
     
+    # Bulk-scan progress, shared by all Gunicorn workers (one row per user)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scan_tasks (
+            user_id INTEGER PRIMARY KEY,
+            status TEXT NOT NULL,
+            total INTEGER DEFAULT 0,
+            completed INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+
     # Run migrations
     try:
         cursor.execute("ALTER TABLE trackers ADD COLUMN last_market_high_url TEXT")
@@ -694,18 +708,70 @@ def api_analyze():
 
 import time
 
+# --- Bulk-scan progress (stored in SQLite so every Gunicorn worker sees it) ---
+
+def _scan_task_update(conn, user_id, **fields):
+    sets = ", ".join(f"{name} = ?" for name in fields)
+    conn.execute(f"UPDATE scan_tasks SET {sets}, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+                 (*fields.values(), user_id))
+    conn.commit()
+
+def claim_scan_task(user_id):
+    """Atomically mark a scan as running. Returns False if one is already running and not stale."""
+    conn = sqlite3.connect(DATABASE)
+    try:
+        cur = conn.execute("""
+            INSERT INTO scan_tasks (user_id, status, total, completed, updated_at)
+            VALUES (?, 'running', 0, 0, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                status = 'running', total = 0, completed = 0, updated_at = CURRENT_TIMESTAMP
+            WHERE scan_tasks.status != 'running' OR scan_tasks.updated_at < datetime('now', ?)
+        """, (user_id, f"-{SCAN_TASK_STALE_MINUTES} minutes"))
+        conn.commit()
+        return cur.rowcount == 1
+    finally:
+        conn.close()
+
+def get_scan_task(user_id):
+    conn = sqlite3.connect(DATABASE)
+    try:
+        row = conn.execute("""
+            SELECT status, total, completed, updated_at < datetime('now', ?)
+            FROM scan_tasks WHERE user_id = ?
+        """, (f"-{SCAN_TASK_STALE_MINUTES} minutes", user_id)).fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return {"status": "idle", "total": 0, "completed": 0}
+    status, total, completed, is_stale = row
+    if status == "running" and is_stale:
+        status = "failed"
+    return {"status": status, "total": total, "completed": completed}
+
 def background_scan(user_id):
+    try:
+        _background_scan(user_id)
+    except Exception as e:
+        print(f"Background scan crashed for user {user_id}: {e}")
+        conn = sqlite3.connect(DATABASE)
+        try:
+            _scan_task_update(conn, user_id, status="failed")
+        finally:
+            conn.close()
+
+def _background_scan(user_id):
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     cursor.execute("SELECT id, product_name, company_name, platform, catalog_url FROM trackers WHERE user_id = ? AND is_active = 1", (user_id,))
     trackers = cursor.fetchall()
-    
+
     if not trackers:
-        SCAN_TASKS[user_id] = {"status": "completed", "total": 0, "completed": 0}
+        _scan_task_update(conn, user_id, status="completed", total=0, completed=0)
         conn.close()
         return
 
-    SCAN_TASKS[user_id] = {"status": "running", "total": len(trackers), "completed": 0}
+    _scan_task_update(conn, user_id, status="running", total=len(trackers), completed=0)
+    completed_count = 0
     
     cursor.execute("SELECT target_competitors, available_scans, is_admin FROM users WHERE id = ?", (user_id,))
     comp_row = cursor.fetchone()
@@ -717,7 +783,6 @@ def background_scan(user_id):
     
     for tracker in trackers:
         if available_scans <= 0 and not is_admin:
-            SCAN_TASKS[user_id]["status"] = "completed"
             break
             
         t_id, product_name, company_name, platform, catalog_url = tracker
@@ -791,18 +856,19 @@ def background_scan(user_id):
             conn.commit()
             print(f"Error scanning {product_name}: {e}")
             
-        SCAN_TASKS[user_id]["completed"] += 1
-        
-    SCAN_TASKS[user_id]["status"] = "completed"
+        completed_count += 1
+        _scan_task_update(conn, user_id, completed=completed_count)
+
+    _scan_task_update(conn, user_id, status="completed")
     conn.close()
 
 @app.route('/api/scan/start', methods=['POST'])
 @login_required_api
 def api_scan_start():
     user_id = session.get('user_id')
-    if user_id in SCAN_TASKS and SCAN_TASKS[user_id].get("status") == "running":
+    if not claim_scan_task(user_id):
         return jsonify({"success": False, "message": "Scan already in progress"})
-    
+
     thread = threading.Thread(target=background_scan, args=(user_id,))
     thread.daemon = True
     thread.start()
@@ -812,8 +878,7 @@ def api_scan_start():
 @login_required_api
 def api_scan_status():
     user_id = session.get('user_id')
-    status = SCAN_TASKS.get(user_id, {"status": "idle", "total": 0, "completed": 0})
-    return jsonify(status)
+    return jsonify(get_scan_task(user_id))
 
 @app.route('/api/settings/competitors', methods=['GET', 'POST'])
 @login_required_api
@@ -878,11 +943,14 @@ def api_chat():
     history = [{"role": row[0], "content": row[1]} for row in history_rows]
     
     # Get reply from agent passing the history and user_id
-    response_text = agent.chat(message, history, user_id=user_id)
-    
+    response_text, tokens_used = agent.chat(message, history, user_id=user_id)
+
     # Save new messages
     cursor.execute("INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)", (conversation_id, "user", message))
     cursor.execute("INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)", (conversation_id, "assistant", response_text))
+    # Count chat usage against the user (shown in the admin panel), same as scans do.
+    if tokens_used:
+        cursor.execute("UPDATE users SET total_tokens_used = total_tokens_used + ? WHERE id = ?", (tokens_used, user_id))
     conn.commit()
     conn.close()
     

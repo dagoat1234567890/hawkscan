@@ -903,6 +903,7 @@ Please analyze and provide SEO tips for my product:
 
 
     def chat(self, message, history=None, user_id=None):
+        """Returns (reply_text, tokens_used) where tokens_used sums every Claude call made for this message."""
         system_prompt = """
         You are Hawkscan, an AI agent for a competitive price-analysis and ecommerce web application. 
         You are flexible and can help the user with anything related to ecommerce.
@@ -978,8 +979,9 @@ Please analyze and provide SEO tips for my product:
         ]
 
         if not self.anthropic_client:
-            return "Anthropic API key is not configured. Please set ANTHROPIC_API_KEY in your .env file."
+            return "Anthropic API key is not configured. Please set ANTHROPIC_API_KEY in your .env file.", 0
 
+        tokens_used = 0
         try:
             messages = []
             if history:
@@ -996,7 +998,10 @@ Please analyze and provide SEO tips for my product:
                     messages=messages,
                     tools=tools
                 )
-                
+                usage = getattr(response, "usage", None)
+                if usage:
+                    tokens_used += (usage.input_tokens or 0) + (usage.output_tokens or 0)
+
                 if response.stop_reason == "tool_use":
                     # Append assistant response with tool use blocks
                     messages.append({"role": "assistant", "content": response.content})
@@ -1114,11 +1119,11 @@ Please analyze and provide SEO tips for my product:
                 else:
                     # Final response (text) received
                     text_blocks = [block.text for block in response.content if block.type == "text"]
-                    return "".join(text_blocks).strip()
-            
+                    return "".join(text_blocks).strip(), tokens_used
+
             # Fallback if loop finishes without stopping
             text_blocks = [block.text for block in response.content if block.type == "text"]
-            return "".join(text_blocks).strip()
+            return "".join(text_blocks).strip(), tokens_used
 
         except Exception as e:
-            return f"Error communicating with Anthropic: {e}"
+            return f"Error communicating with Anthropic: {e}", tokens_used
